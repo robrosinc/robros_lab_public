@@ -1,0 +1,18 @@
+[workspace]
+name = "robros_lab_public"
+version = "0.1.0"
+description = "Developer tooling for robros_lab_public"
+channels = ["conda-forge"]
+platforms = ["linux-64"]
+
+[dependencies]
+python = "3.10.*"
+pre-commit = ">=4.2.0,<5"
+ruff = ">=0.14.0,<0.15"
+
+[tasks]
+fmt = { cmd = "ruff check . --select I --fix && ruff format ." }
+check = { cmd = "ruff check . --select I && ruff format --check ." }
+lint = { cmd = "ruff check ." }
+hooks = { cmd = "pre-commit install" }
+precommit = { cmd = "pre-commit run --all-files" }
