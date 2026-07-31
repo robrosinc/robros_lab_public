@@ -2,9 +2,24 @@ from __future__ import annotations
 
 import torch
 from isaaclab.envs import ManagerBasedEnv
-from isaaclab.envs.mdp.actions import ActionTermCfg
+from isaaclab.envs.mdp.actions import ActionTermCfg, JointPositionAction, JointPositionActionCfg
 from isaaclab.managers.action_manager import ActionTerm
 from isaaclab.utils import configclass
+
+
+class ClippedJointPositionAction(JointPositionAction):
+    """Joint-position action that clamps processed position targets to articulation joint limits."""
+
+    cfg: ClippedJointPositionActionCfg
+
+    def process_actions(self, actions: torch.Tensor):
+        super().process_actions(actions)
+        joint_pos_limits = self._asset.data.joint_pos_limits[:, self._joint_ids]
+        self._processed_actions = torch.clamp(
+            self._processed_actions,
+            min=joint_pos_limits[..., 0],
+            max=joint_pos_limits[..., 1],
+        )
 
 
 class GaitFreqAction(ActionTerm):
@@ -44,9 +59,14 @@ class GaitFreqAction(ActionTerm):
 
 
 @configclass
+class ClippedJointPositionActionCfg(JointPositionActionCfg):
+    class_type: type[ActionTerm] = ClippedJointPositionAction
+
+
+@configclass
 class GaitFreqActionCfg(ActionTermCfg):
     class_type: type[ActionTerm] = GaitFreqAction
     lpf_alpha: float = 0.3
 
 
-__all__ = ["GaitFreqAction", "GaitFreqActionCfg"]
+__all__ = ["ClippedJointPositionAction", "ClippedJointPositionActionCfg", "GaitFreqAction", "GaitFreqActionCfg"]

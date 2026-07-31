@@ -9,8 +9,8 @@ from isaaclab.utils import configclass
 
 import robros_lab_public.tasks.locomotion.velocity.mdp as robros_mdp
 
-from ..base.rough_env_cfg import IGRISCActions as IGRISCBaseActions
-from ..base.rough_env_cfg import IGRISCObservations as IGRISCBaseObservations
+from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import ActionsCfg as BaseActions
+from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import ObservationsCfg as BaseObservations
 from ..base.rough_env_cfg import IGRISCRewards as IGRISCBaseRewards
 from ..base.rough_env_cfg import IGRISCRoughEnvCfg as IGRISCBaseRoughEnvCfg
 
@@ -36,23 +36,28 @@ class IGRISCRewards(IGRISCBaseRewards):
             "swing_asset_cfg": SceneEntityCfg("robot", joint_names=[".*_Shoulder_Pitch_.*"]),
         },
     )
+    joint_deviation_arms = RewTerm(
+        func=robros_mdp.joint_deviation_l2,
+        weight=-0.2,
+        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_Shoulder_.*", ".*_Elbow_.*"])},
+    )
     # -- regularization
     gait_action_limit = RewTerm(func=robros_mdp.gait_action_limit, weight=-0.25, params={"action_term": "gait_action"})
 
 
 @configclass
-class IGRISCActions(IGRISCBaseActions):
+class IGRISCActions(BaseActions):
     """Native joint-position actions plus the phase-frequency action."""
 
     gait_action = robros_mdp.GaitFreqActionCfg(asset_name="robot", lpf_alpha=0.3)
 
 
 @configclass
-class IGRISCObservations(IGRISCBaseObservations):
+class IGRISCObservations(BaseObservations):
     """Phase-based IGRIS-C observations built on top of the base IGRIS-C observation layout."""
 
     @configclass
-    class PolicyCfg(IGRISCBaseObservations.PolicyCfg):
+    class PolicyCfg(BaseObservations.PolicyCfg):
         phase = ObsTerm(
             func=robros_mdp.gait_phase_obs,
             params={"asset_cfg": SceneEntityCfg("robot"), "default_gait_freq": 1.0},
@@ -60,7 +65,7 @@ class IGRISCObservations(IGRISCBaseObservations):
         lpf_f = ObsTerm(func=robros_mdp.gait_action)
 
     @configclass
-    class CriticCfg(IGRISCBaseObservations.CriticCfg):
+    class CriticCfg(BaseObservations.CriticCfg):
         phase = ObsTerm(
             func=robros_mdp.gait_phase_obs,
             params={"asset_cfg": SceneEntityCfg("robot"), "default_gait_freq": 1.0},
@@ -82,4 +87,29 @@ class IGRISCRoughEnvCfg(IGRISCBaseRoughEnvCfg):
 
 @configclass
 class IGRISCRoughEnvCfg_PLAY(IGRISCRoughEnvCfg):
-    pass
+    def __post_init__(self):
+        # post init of parent
+        super().__post_init__()
+
+        # make a smaller scene for play
+        self.scene.num_envs = 2
+        self.scene.env_spacing = 2.5
+        self.episode_length_s = 40.0
+        # spawn the robot randomly in the grid (instead of their terrain levels)
+        self.scene.terrain.max_init_terrain_level = None
+        # reduce the number of terrains to save memory
+        if self.scene.terrain.terrain_generator is not None:
+            self.scene.terrain.terrain_generator.num_rows = 5
+            self.scene.terrain.terrain_generator.num_cols = 5
+            self.scene.terrain.terrain_generator.curriculum = False
+
+        self.commands.base_velocity.ranges.lin_vel_x = (0.0, 0.0)
+        self.commands.base_velocity.ranges.lin_vel_y = (0.0, 0.0)
+        self.commands.base_velocity.ranges.ang_vel_z = (0.0, 0.0)
+        self.commands.base_velocity.ranges.heading = (0.0, 0.0)
+        self.commands.base_velocity.heading_command = False
+        # disable randomization for play
+        self.observations.policy.enable_corruption = False
+        # remove random pushing
+        self.events.base_external_force_torque = None
+        self.events.push_robot = None

@@ -24,6 +24,8 @@ SELF_COLLISION_SENSOR_SPECS = (
     ("self_collision_torso", "base_link"),
     ("self_collision_left_forearm", "Link_Elbow_Pitch_Left"),
     ("self_collision_right_forearm", "Link_Elbow_Pitch_Right"),
+    ("self_collision_left_hip_bracket", "Link_Hip_Roll_Left"),
+    ("self_collision_right_hip_bracket", "Link_Hip_Roll_Right"),
     ("self_collision_left_thigh", "Link_Hip_Yaw_Left"),
     ("self_collision_right_thigh", "Link_Hip_Yaw_Right"),
     ("self_collision_left_shin", "Link_Knee_Pitch_Left"),
@@ -56,12 +58,14 @@ class IGRISCScene(BaseSceneCfg):
     self_collision_torso = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[0][1])
     self_collision_left_forearm = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[1][1])
     self_collision_right_forearm = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[2][1])
-    self_collision_left_thigh = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[3][1])
-    self_collision_right_thigh = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[4][1])
-    self_collision_left_shin = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[5][1])
-    self_collision_right_shin = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[6][1])
-    self_collision_left_foot = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[7][1])
-    self_collision_right_foot = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[8][1])
+    self_collision_left_hip_bracket = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[3][1])
+    self_collision_right_hip_bracket = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[4][1])
+    self_collision_left_thigh = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[5][1])
+    self_collision_right_thigh = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[6][1])
+    self_collision_left_shin = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[7][1])
+    self_collision_right_shin = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[8][1])
+    self_collision_left_foot = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[9][1])
+    self_collision_right_foot = _self_collision_sensor_cfg(SELF_COLLISION_SENSOR_SPECS[10][1])
 
 
 @configclass
@@ -110,7 +114,7 @@ class IGRISCRewards:
             "command_name": "base_velocity",
             "asset_cfg": SceneEntityCfg("robot"),
         },
-        weight=-0.5,
+        weight=-1.0,
     )
     # -- style
     joint_deviation_hip = RewTerm(
@@ -120,12 +124,12 @@ class IGRISCRewards:
     )
     joint_deviation_arms = RewTerm(
         func=robros_mdp.joint_deviation_l2,
-        weight=-0.2,
+        weight=-0.5,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_Shoulder_.*", ".*_Elbow_.*"])},
     )
     joint_deviation_waist = RewTerm(
         func=robros_mdp.joint_deviation_l2,
-        weight=-0.3,
+        weight=-0.5,
         params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*Waist.*")},
     )
     base_height_exp = RewTerm(
@@ -140,7 +144,7 @@ class IGRISCRewards:
     )
     feet_distance = RewTerm(
         func=robros_mdp.feet_distance,
-        weight=0.2,
+        weight=0.5,
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_Ankle_Roll_.*"),
             "anchor_asset_cfg": SceneEntityCfg("robot", body_names=".*_Waist_Pitch.*"),
@@ -159,7 +163,7 @@ class IGRISCRewards:
     )
     feet_air_time = RewTerm(
         func=robros_mdp.feet_air_time,
-        weight=3.0,
+        weight=5.0,
         params={
             "command_name": "base_velocity",
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
@@ -222,6 +226,14 @@ class IGRISCRewards:
         weight=-1.0e-3,
         params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"), "threshold": 600.0},
     )
+    slow_touchdown = RewTerm(
+        func=robros_mdp.slow_touchdown_penalty,
+        weight=-1.0,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
+        },
+    )
     self_collisions = RewTerm(
         func=robros_mdp.self_collision_cost,
         weight=-10.0,
@@ -248,7 +260,7 @@ class IGRISCTerminations(BaseTerminationsCfg):
     thigh_contact_acceleration = DoneTerm(
         func=robros_mdp.ThighContactAccelerationTermination,
         params={
-            "acceleration_threshold": 200.0,
+            "acceleration_threshold": 150.0,
             "thigh_name_pattern": ".*Hip_Yaw_{side}.*",
             "foot_name_pattern": ".*Ankle_Roll_{side}.*",
             "asset_cfg": SceneEntityCfg("robot"),

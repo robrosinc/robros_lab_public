@@ -117,7 +117,7 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_pos = mdp.JointPositionActionCfg(
+    joint_pos = robros_mdp.ClippedJointPositionActionCfg(
         asset_name="robot", joint_names=[".*.*"], use_default_offset=True, scale=0.25
     )
 

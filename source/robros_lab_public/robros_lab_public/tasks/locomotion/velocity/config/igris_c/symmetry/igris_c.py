@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from contextlib import suppress
 from typing import TYPE_CHECKING
 
 import torch
@@ -24,10 +23,8 @@ def compute_symmetric_states(
 ):
     """Augments the given observations and actions by applying symmetry transformations.
 
-    This function creates augmented versions of the provided observations and actions by applying
-    four symmetrical transformations: original, left-right, front-back, and diagonal. The symmetry
-    transformations are beneficial for reinforcement learning tasks by providing additional
-    diverse data without requiring additional data collection.
+    This function creates augmented versions of the provided observations and actions by applying the
+    left-right symmetry used for the public IGRIS-C locomotion tasks.
 
     Args:
         env: The environment instance.
@@ -41,10 +38,11 @@ def compute_symmetric_states(
     # observations
     if obs is not None:
         batch_size = obs.batch_size[0]
-        # since we have 2 different symmetries, we need to augment the batch size by 2
+        # Original batch plus left-right mirrored batch.
         obs_aug = obs.repeat(2)
 
-        for group_name in obs:
+        group_names = tuple(obs.keys())
+        for group_name in group_names:
             obs_aug[group_name][:batch_size] = obs[group_name][:]
             obs_aug[group_name][batch_size : 2 * batch_size] = _transform_obs_left_right(
                 env.unwrapped, obs[group_name], group_name
@@ -55,7 +53,7 @@ def compute_symmetric_states(
     # actions
     if actions is not None:
         batch_size = actions.shape[0]
-        # since we have 2 different symmetries, we need to augment the batch size by 2
+        # Original batch plus left-right mirrored batch.
         actions_aug = torch.zeros(batch_size * 2, actions.shape[1], device=actions.device)
         # -- original
         actions_aug[:batch_size] = actions[:]
@@ -67,11 +65,6 @@ def compute_symmetric_states(
     return obs_aug, actions_aug
 
 
-"""
-Symmetry functions for observations.
-"""
-
-
 def _transform_obs_left_right(env: ManagerBasedRLEnv, obs: torch.Tensor, group_name: str) -> torch.Tensor:
     """Apply the cached left-right symmetry transform for an observation group."""
     obs_ = obs.clone()
@@ -80,12 +73,11 @@ def _transform_obs_left_right(env: ManagerBasedRLEnv, obs: torch.Tensor, group_n
         return obs_
 
     batch_size = obs_.shape[0]
-    num_joints = env.scene["robot"].num_joints
     height_perm = _get_igrisc_height_left_right_perm(env)
     if height_perm is not None:
         height_perm = _to_device(height_perm, obs_.device)
 
-    for start, end, op, width, extra in transform_plan:
+    for start, end, op, width in transform_plan:
         term = obs_[:, start:end]
 
         if op == "flip_yz":
@@ -105,47 +97,15 @@ def _transform_obs_left_right(env: ManagerBasedRLEnv, obs: torch.Tensor, group_n
             term[:] = _switch_igrisc_joints_left_right(env, term.reshape(batch_size, -1, width)).reshape_as(term)
         elif op == "joint_act":
             block = term.reshape(batch_size, -1, width)
-            block[..., :num_joints] = _switch_igrisc_actions_left_right(env, block[..., :num_joints])
-        elif op == "joint_swap":
-            term[:] = _swap_igrisc_joint_params_left_right(env, term.reshape(batch_size, -1, width)).reshape_as(term)
-        elif op == "body_swap":
-            term[:] = _swap_igrisc_body_params_left_right(env, term.reshape(batch_size, -1, width)).reshape_as(term)
-        elif op == "body_points_flip_y":
-            body_perm = _to_device(extra, obs_.device)
-            block = term.reshape(batch_size, -1, width // 3, 3)
-            if body_perm is not None:
-                block = block.index_select(-2, body_perm)
-            block[..., 1].mul_(-1.0)
-            term[:] = block.reshape_as(term)
-        elif op == "body_scalar_swap":
-            body_perm = _to_device(extra, obs_.device)
-            if body_perm is not None:
-                term[:] = term.reshape(batch_size, -1, width).index_select(-1, body_perm).reshape_as(term)
+            block[:] = _switch_igrisc_actions_left_right(env, block)
         elif op == "height" and height_perm is not None:
             term[:] = term.reshape(batch_size, -1, width).index_select(-1, height_perm).reshape_as(term)
 
     return obs_
 
 
-"""
-Symmetry functions for actions.
-"""
-
-
 def _transform_actions_left_right(env: ManagerBasedRLEnv, actions: torch.Tensor) -> torch.Tensor:
-    """Applies a left-right symmetry transformation to the actions tensor.
-
-    This function modifies the given actions tensor by applying transformations
-    that represent a symmetry with respect to the left-right axis. This includes
-    flipping the joint positions, joint velocities, and last actions for the
-    IGRISC robot.
-
-    Args:
-        actions: The actions tensor to be transformed.
-
-    Returns:
-        The transformed actions tensor with left-right symmetry applied.
-    """
+    """Apply a left-right symmetry transformation to the action tensor."""
     actions = actions.clone()
     num_joints = env.scene["robot"].num_joints
     if actions.shape[1] <= num_joints:
@@ -156,14 +116,7 @@ def _transform_actions_left_right(env: ManagerBasedRLEnv, actions: torch.Tensor)
     return actions
 
 
-"""
-Helper functions for symmetry.
-"""
-
-
-def _get_igrisc_obs_left_right_plan(
-    env: ManagerBasedRLEnv, group_name: str
-) -> tuple[tuple[int, int, str, int, torch.Tensor | None], ...]:
+def _get_igrisc_obs_left_right_plan(env: ManagerBasedRLEnv, group_name: str) -> tuple[tuple[int, int, str, int], ...]:
     """Build and cache the observation transform plan for a specific group."""
     if not hasattr(env, "_igrisc_obs_left_right_plans"):
         env._igrisc_obs_left_right_plans = {}
@@ -173,32 +126,25 @@ def _get_igrisc_obs_left_right_plan(
 
     term_names = env.observation_manager.active_terms.get(group_name, [])
     term_dims = env.observation_manager.group_obs_term_dim.get(group_name, [])
-    term_cfgs = getattr(env.observation_manager, "_group_obs_term_cfgs", {}).get(group_name, [])
     robot = env.scene["robot"]
     num_joints = robot.num_joints
-    num_bodies = robot.num_bodies
     height_perm = _get_igrisc_height_left_right_perm(env)
 
     plan = []
     offset = 0
-    for idx, (name, dims) in enumerate(zip(term_names, term_dims)):
+    for name, dims in zip(term_names, term_dims):
         shape = _normalize_term_dims(dims)
         term_len = math.prod(shape)
-        width = shape[-1]
-        if idx < len(term_cfgs):
-            width = _get_igrisc_obs_term_feature_width(env, group_name, name, term_cfgs[idx], default_width=shape[-1])
+        width = _get_igrisc_obs_term_feature_width(name, shape, num_joints, height_perm)
         op = None
-        extra = None
 
         if ("velocity_commands" in name or name in ("commands", "base_velocity")) and width == 3:
             op = "flip_yz"
-        elif ("base_ang_vel" in name or "base_ang_acc" in name) and width == 3:
+        elif name == "base_ang_vel" and width == 3:
             op = "flip_xz"
-        elif (
-            "base_lin_vel" in name or "base_lin_acc" in name or "base_com" in name or "projected_gravity" in name
-        ) and width == 3:
+        elif name in ("base_lin_vel", "projected_gravity") and width == 3:
             op = "flip_y"
-        elif "phase" in name and width == 2:
+        elif name == "phase" and width == 2:
             op = "swap_2"
         elif ("joint_pos" in name or "joint_vel" in name or "joint_torque" in name) and width == num_joints:
             op = "joint_obs"
@@ -207,22 +153,10 @@ def _get_igrisc_obs_left_right_plan(
         elif "contact" in name and width == 2:
             op = "swap_2"
         elif name == "height_scan" and height_perm is not None:
-            width = int(height_perm.numel())
             op = "height"
-        elif name == "feet_positions" and width % 3 == 0 and idx < len(term_cfgs):
-            extra = _get_igrisc_selected_body_left_right_perm(env, term_cfgs[idx])
-            op = "body_points_flip_y"
-        elif name in ("feet_height", "link_height") and idx < len(term_cfgs):
-            extra = _get_igrisc_selected_body_left_right_perm(env, term_cfgs[idx])
-            if extra is not None and extra.numel() == width:
-                op = "body_scalar_swap"
-        elif _is_igrisc_joint_parameter_term(name) and width == num_joints:
-            op = "joint_swap"
-        elif _is_igrisc_body_parameter_term(name) and width == num_bodies:
-            op = "body_swap"
 
         if op is not None and term_len % width == 0:
-            plan.append((offset, offset + term_len, op, width, extra))
+            plan.append((offset, offset + term_len, op, width))
         offset += term_len
 
     cached = tuple(plan)
@@ -238,91 +172,28 @@ def _normalize_term_dims(dims: int | tuple[int, ...] | list[int] | torch.Size) -
 
 
 def _get_igrisc_obs_term_feature_width(
-    env: ManagerBasedRLEnv,
-    group_name: str,
     term_name: str,
-    term_cfg,
-    default_width: int,
+    shape: tuple[int, ...],
+    num_joints: int,
+    height_perm: torch.Tensor | None,
 ) -> int:
-    """Return the per-step flattened feature width for an observation term."""
-    if not hasattr(env, "_igrisc_obs_term_feature_widths"):
-        env._igrisc_obs_term_feature_widths = {}
-
-    cache_key = (group_name, term_name)
-    cached = env._igrisc_obs_term_feature_widths.get(cache_key)
-    if cached is not None:
-        return cached
-
-    width = int(default_width)
-    try:
-        with torch.no_grad():
-            sample = term_cfg.func(env, **term_cfg.params)
-        width = int(math.prod(sample.shape[1:])) if sample.ndim > 1 else 1
-    except Exception:
-        width = int(default_width)
-    finally:
-        reset_fn = getattr(term_cfg.func, "reset", None)
-        if callable(reset_fn):
-            with suppress(TypeError):
-                reset_fn()
-
-    env._igrisc_obs_term_feature_widths[cache_key] = width
-    return width
-
-
-def _is_igrisc_joint_parameter_term(name: str) -> bool:
-    return any(
-        key in name
-        for key in (
-            "joint_stiffness",
-            "joint_damping",
-            "joint_armature",
-            "joint_friction",
-            "joint_dynamic_friction",
-            "joint_viscous_friction",
-            "frictionloss",
-            "armature",
-            "kd",
-            "kp",
-        )
-    )
-
-
-def _is_igrisc_body_parameter_term(name: str) -> bool:
-    return "link_mass" in name and "base_link_mass" not in name
-
-
-def _get_igrisc_selected_body_left_right_perm(env: ManagerBasedRLEnv, term_cfg) -> torch.Tensor | None:
-    """Return a permutation that swaps selected left/right body vectors while preserving center bodies."""
-    asset_cfg = getattr(term_cfg, "params", {}).get("asset_cfg", None)
-    if asset_cfg is None:
-        return None
-
-    body_ids = asset_cfg.body_ids
-    robot = env.scene["robot"]
-    if isinstance(body_ids, slice):
-        selected_ids = list(range(robot.num_bodies))
-    elif isinstance(body_ids, int):
-        selected_ids = [body_ids]
-    else:
-        selected_ids = list(body_ids)
-
-    if not selected_ids:
-        return None
-
-    selected_names = [robot.body_names[body_id] for body_id in selected_ids]
-    selected_name_to_index = {name: index for index, name in enumerate(selected_names)}
-    perm = []
-    for name in selected_names:
-        if "Left" in name:
-            mirror_name = name.replace("Left", "Right")
-        elif "Right" in name:
-            mirror_name = name.replace("Right", "Left")
-        else:
-            mirror_name = name
-        perm.append(selected_name_to_index.get(mirror_name, selected_name_to_index[name]))
-
-    return torch.tensor(perm, device=env.device, dtype=torch.long)
+    """Return the per-sample feature width before IsaacLab history flattening."""
+    if term_name in (
+        "velocity_commands",
+        "base_velocity",
+        "commands",
+        "base_ang_vel",
+        "base_lin_vel",
+        "projected_gravity",
+    ):
+        return 3
+    if term_name in ("joint_pos", "joint_vel", "joint_torques", "last_action", "last_actions"):
+        return num_joints
+    if term_name in ("phase", "contact_state"):
+        return 2
+    if term_name == "height_scan" and height_perm is not None:
+        return int(height_perm.numel())
+    return shape[-1]
 
 
 def _get_igrisc_height_left_right_perm(env: ManagerBasedRLEnv) -> torch.Tensor | None:
@@ -375,18 +246,6 @@ def _switch_igrisc_joints_left_right(env: ManagerBasedRLEnv, joint_data: torch.T
     return joint_data_switched
 
 
-def _swap_igrisc_joint_params_left_right(env: ManagerBasedRLEnv, joint_data: torch.Tensor) -> torch.Tensor:
-    """Swap left/right joint parameters without changing sign."""
-    maps = _get_igrisc_symmetry_maps(env)
-    return _swap_left_right_indices(joint_data, maps["left_idx_obs"], maps["right_idx_obs"])
-
-
-def _swap_igrisc_body_params_left_right(env: ManagerBasedRLEnv, body_data: torch.Tensor) -> torch.Tensor:
-    """Swap left/right body parameters without changing sign."""
-    maps = _get_igrisc_symmetry_maps(env)
-    return _swap_left_right_indices(body_data, maps["left_idx_body"], maps["right_idx_body"])
-
-
 def _switch_igrisc_actions_left_right(env: ManagerBasedRLEnv, action_data: torch.Tensor) -> torch.Tensor:
     """Applies a left-right symmetry transformation to the joint action tensor."""
     maps = _get_igrisc_symmetry_maps(env)
@@ -407,7 +266,6 @@ def _get_igrisc_symmetry_maps(env: ManagerBasedRLEnv) -> dict:
 
     robot = env.scene["robot"]
     obs_joint_names = robot.joint_names
-    body_names = robot.body_names
     action_joint_names = obs_joint_names
     action_terms = getattr(getattr(env, "action_manager", None), "_terms", None)
     if action_terms is not None:
@@ -445,15 +303,12 @@ def _get_igrisc_symmetry_maps(env: ManagerBasedRLEnv) -> dict:
     left_idx_act, right_idx_act = _build_left_right_idx(action_joint_names)
     flip_idx_obs = [i for i, n in enumerate(obs_joint_names) if _has_any(n, flip_keys)]
     flip_idx_act = [i for i, n in enumerate(action_joint_names) if _has_any(n, flip_keys)]
-    left_idx_body, right_idx_body = _build_left_right_idx(body_names)
 
     env._igrisc_symmetry_maps = {
         "left_idx_obs": torch.tensor(left_idx_obs, device=env.device, dtype=torch.long),
         "right_idx_obs": torch.tensor(right_idx_obs, device=env.device, dtype=torch.long),
         "left_idx_act": torch.tensor(left_idx_act, device=env.device, dtype=torch.long),
         "right_idx_act": torch.tensor(right_idx_act, device=env.device, dtype=torch.long),
-        "left_idx_body": torch.tensor(left_idx_body, device=env.device, dtype=torch.long),
-        "right_idx_body": torch.tensor(right_idx_body, device=env.device, dtype=torch.long),
         "flip_idx_obs": torch.tensor(flip_idx_obs, device=env.device, dtype=torch.long),
         "flip_idx_act": torch.tensor(flip_idx_act, device=env.device, dtype=torch.long),
     }

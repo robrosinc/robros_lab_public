@@ -222,7 +222,6 @@ def self_collision_cost(env: ManagerBasedRLEnv, sensor_names: Sequence[str], thr
         force_mag = torch.norm(force_matrix, dim=-1)
         hit = torch.amax(force_mag, dim=tuple(range(2, force_mag.ndim))) > threshold
         sensor_hits.append(hit)
-
     return torch.stack(sensor_hits, dim=0).any(dim=(0, 2)).to(dtype=torch.float)
 
 

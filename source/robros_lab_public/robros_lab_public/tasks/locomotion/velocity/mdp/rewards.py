@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 import torch
 from isaaclab.assets import Articulation
 from isaaclab.envs import mdp
-from isaaclab.managers import SceneEntityCfg
+from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
 from isaaclab.sensors import ContactSensor
 from isaaclab.utils.math import quat_apply_inverse, wrap_to_pi, yaw_quat
 
@@ -230,6 +230,67 @@ def stand_still_base_velocity_l2(
     ang_vel_l2 = torch.sum(torch.square(asset.data.root_ang_vel_b[:, :3]), dim=1)
     return (lin_vel_l2 + ang_vel_l2) * command_still
 
+class slow_touchdown_penalty(ManagerTermBase):
+    """
+    Penalize fast touchdown (contact appearing with high foot speed).
+    """
+
+    def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRLEnv):
+        """Initialize the term.
+
+        Args:
+            cfg: The configuration of the reward term.
+            env: The RL environment instance.
+        """
+        super().__init__(cfg, env)
+        self.last_vel = None
+        self.last_contact_force = None
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
+    ) -> torch.Tensor:
+        """Compute the action smoothness penalty.
+
+        Args:
+            env: The RL environment instance.
+            sensor_cfg: The feet contact sensors.
+            asset_cfg: The robot feet asset.
+
+        Returns:
+            The penalty value based on the touchdown speed.
+        """
+        sensor: ContactSensor = env.scene[sensor_cfg.name]
+        asset: Articulation = env.scene[asset_cfg.name]
+        sensor_body_ids = sensor_cfg.body_ids if sensor_cfg.body_ids is not None else slice(None)
+        asset_body_ids = asset_cfg.body_ids if asset_cfg.body_ids is not None else sensor_body_ids
+
+        forces = sensor.data.net_forces_w[:, sensor_body_ids, :]
+        curr_vel = asset.data.body_lin_vel_w[:, asset_body_ids, :]
+
+        if self.last_contact_force is None or self.last_vel is None:
+            self.last_contact_force = forces.clone()
+            self.last_vel = curr_vel.clone()
+            return torch.zeros(curr_vel.shape[0], device=curr_vel.device)
+
+        force_sq = torch.sum(forces * forces, dim=-1)
+        last_force_sq = torch.sum(self.last_contact_force * self.last_contact_force, dim=-1)
+        touchdown = (force_sq > 1.0) & (last_force_sq < 1.0)
+
+        curr_speed_sq = torch.sum(curr_vel * curr_vel, dim=-1)
+        last_speed_sq = torch.sum(self.last_vel * self.last_vel, dim=-1)
+        penalty = torch.sum(touchdown * torch.sqrt(torch.maximum(curr_speed_sq, last_speed_sq)), dim=-1)
+
+        self.last_contact_force = forces.clone()
+        self.last_vel = curr_vel.clone()
+
+        startup_env_mask = env.episode_length_buf < 1
+        penalty[startup_env_mask] = 0
+        return penalty
+
+
 
 __all__ = [
     "arm_swing",
@@ -244,4 +305,5 @@ __all__ = [
     "stand_still_joint_vel_l2",
     "track_link_ang_vel_z_world_exp",
     "track_link_lin_vel_xy_yaw_frame_exp",
+    "slow_touchdown_penalty"
 ]
