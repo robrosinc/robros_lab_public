@@ -181,7 +181,7 @@
     <visual>
       <origin xyz="0.048 0.0 -0.0685" />
       <geometry>
-        <box size="0.24 0.08 0.005"/>
+        <box size="0.2 0.07 0.005"/>
       </geometry>
       <!-- <material name="random">
         <color rgba="0.0706 0.0706 0.0706 0.7" />
@@ -190,7 +190,7 @@
     <collision>
       <origin xyz="0.048 0.0 -0.0685" />
       <geometry>
-        <box size="0.24 0.08 0.005"/>
+        <box size="0.2 0.07 0.005"/>
       </geometry>
     </collision>
   </link>
@@ -302,7 +302,7 @@
     <visual>
       <origin xyz="0.048 0.0 -0.0685" />
       <geometry>
-        <box size="0.24 0.08 0.005"/>
+        <box size="0.2 0.07 0.005"/>
       </geometry>
       <!-- <material name="random">
         <color rgba="0.0706 0.0706 0.0706 0.7" />
@@ -311,7 +311,7 @@
     <collision>
       <origin xyz="0.048 0.0 -0.0685" />
       <geometry>
-        <box size="0.24 0.08 0.005"/>
+        <box size="0.2 0.07 0.005"/>
       </geometry>
     </collision>
   </link>
