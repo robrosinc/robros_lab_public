@@ -77,9 +77,10 @@ Flat-terrain play variants:
 python scripts/rsl_rl/base/play.py --task Isaac-Velocity-Phase-Flat-IGRISC_Play
 ```
 
-## Model Note
+## Note
 
-The IGRIS-C model sets the torso/root as `base_link`. If you implement pelvis-centric observations, rewards, commands, or deployment logic, customize those functions to use the pelvis link instead. In the IGRIS-C model, the pelvis link is named `Link_Waist_Pitch`.
+- The IGRIS-C model sets the torso/root as `base_link`. If you implement pelvis-centric observations, rewards, commands, or deployment logic, customize those functions to use the pelvis link instead. In the IGRIS-C model, the pelvis link is named `Link_Waist_Pitch`.
+- The reward settings are minimal examples. Users may have to tune the rewards further to see desired policy behaviors.
 
 ## Common Issues
 
