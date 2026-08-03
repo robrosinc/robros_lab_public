@@ -8,9 +8,9 @@ from isaaclab.managers import SceneEntityCfg
 from isaaclab.utils import configclass
 
 import robros_lab_public.tasks.locomotion.velocity.mdp as robros_mdp
-
 from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import ActionsCfg as BaseActions
 from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import ObservationsCfg as BaseObservations
+
 from ..base.rough_env_cfg import IGRISCRewards as IGRISCBaseRewards
 from ..base.rough_env_cfg import IGRISCRoughEnvCfg as IGRISCBaseRoughEnvCfg
 

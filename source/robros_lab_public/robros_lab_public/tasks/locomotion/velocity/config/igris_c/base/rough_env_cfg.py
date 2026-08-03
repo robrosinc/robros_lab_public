@@ -195,10 +195,10 @@ class IGRISCRewards:
         },
     )
     # -- regularization
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
     action_l2 = RewTerm(
         func=mdp.action_l2,
-        weight=-2.0e-4,
+        weight=-1.0e-3,
     )
     dof_pos_limits = RewTerm(func=robros_mdp.joint_pos_limits_binary, weight=-10.0)
     dof_acc_l2 = RewTerm(
@@ -211,7 +211,7 @@ class IGRISCRewards:
     )
     dof_torques_l2 = RewTerm(
         func=mdp.joint_torques_l2,
-        weight=-5.0e-6,
+        weight=-2.0e-5,
     )
     slow_touchdown = RewTerm(
         func=robros_mdp.slow_touchdown_penalty,

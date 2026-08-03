@@ -230,6 +230,7 @@ def stand_still_base_velocity_l2(
     ang_vel_l2 = torch.sum(torch.square(asset.data.root_ang_vel_b[:, :3]), dim=1)
     return (lin_vel_l2 + ang_vel_l2) * command_still
 
+
 class slow_touchdown_penalty(ManagerTermBase):
     """
     Penalize fast touchdown (contact appearing with high foot speed).
@@ -291,7 +292,6 @@ class slow_touchdown_penalty(ManagerTermBase):
         return penalty
 
 
-
 __all__ = [
     "arm_swing",
     "contact_swing_track",
@@ -305,5 +305,5 @@ __all__ = [
     "stand_still_joint_vel_l2",
     "track_link_ang_vel_z_world_exp",
     "track_link_lin_vel_xy_yaw_frame_exp",
-    "slow_touchdown_penalty"
+    "slow_touchdown_penalty",
 ]

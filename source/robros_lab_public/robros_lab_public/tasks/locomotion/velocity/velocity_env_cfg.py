@@ -117,7 +117,7 @@ class CommandsCfg:
 class ActionsCfg:
     """Action specifications for the MDP."""
 
-    joint_pos = robros_mdp.ClippedJointPositionActionCfg(
+    joint_pos = mdp.JointPositionActionCfg(
         asset_name="robot", joint_names=[".*.*"], use_default_offset=True, scale=0.25
     )
 
@@ -237,8 +237,8 @@ class EventCfg:
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle.*"),
-            "static_friction_range": (0.5, 2.0),
-            "dynamic_friction_range": (0.5, 2.0),
+            "static_friction_range": (0.2, 2.0),
+            "dynamic_friction_range": (0.2, 2.0),
             "restitution_range": (0.0, 0.4),
             "num_buckets": 64,
             "make_consistent": True,
