@@ -1,4 +1,5 @@
-"""Public Robros IsaacLab extension."""
+"""IGRIS-C locomotion extension for Isaac Lab."""
 
-from .assets import *  # noqa: F401, F403
-from .tasks import *  # noqa: F401, F403
+# Register Gym environments.
+from .assets import *
+from .tasks import *

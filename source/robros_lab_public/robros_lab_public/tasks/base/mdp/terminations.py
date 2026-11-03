@@ -38,13 +38,13 @@ def root_height_below_minimum(
     if sensor_cfg is not None:
         sensor: RayCaster = env.scene[sensor_cfg.name]
         # Adjust the target height using the sensor data
-        adjusted_minimum_height = minimum_height + torch.mean(sensor.data.ray_hits_w[..., 2], dim=1)
+        adjusted_minimum_height = minimum_height + torch.mean(sensor.data.ray_hits_w.torch[..., 2], dim=1)
     else:
         # Use the provided target height directly for flat terrain
         adjusted_minimum_height = minimum_height
     # extract the used quantities (to enable type-hinting)
     asset: RigidObject = env.scene[asset_cfg.name]
-    return asset.data.root_pos_w[:, 2] < adjusted_minimum_height
+    return asset.data.root_pos_w.torch[:, 2] < adjusted_minimum_height
 
 
 def _side_pattern(pattern: str, side: str) -> str:
@@ -107,8 +107,8 @@ class ThighContactAccelerationTermination(ManagerTermBase):
         side_names: tuple[str, ...] = ("Left", "Right"),
     ) -> torch.Tensor:
         terminated = torch.zeros(env.num_envs, device=self.device, dtype=torch.bool)
-        body_lin_acc_w = self._asset.data.body_lin_acc_w
-        net_forces_w = self._sensor.data.net_forces_w
+        body_lin_acc_w = self._asset.data.body_lin_acc_w.torch
+        net_forces_w = self._sensor.data.net_forces_w.torch
 
         for thigh_ids, foot_ids in self._body_id_pairs:
             high_accel = torch.any(

@@ -1,3 +1,3 @@
-from .mixed import MIXED_ROUGH_TERRAINS_CFG
-
-__all__ = ["MIXED_ROUGH_TERRAINS_CFG"]
+from .curriculum_random_uniform import *
+from .mixed import *
+from .random_rough import *

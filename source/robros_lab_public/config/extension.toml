@@ -8,28 +8,16 @@ category = "isaaclab"
 readme  = "README.md"
 
 title = "Public Robros Locomotion Training Extension"
-author = "Daegyu Lim"
-maintainer = "Daegyu Lim"
+author = "ROBROS"
+maintainer = "ROBROS"
 description="Minimal IsaacLab training extension for Robros IGRIS-C locomotion policies."
 repository = "https://github.com/robrosinc/robros_lab_public.git"
 keywords = ["extension", "robros_lab_public", "isaaclab"]
 
 [dependencies]
 "isaaclab" = {}
-"isaaclab_assets" = {}
-"isaaclab_mimic" = {}
 "isaaclab_rl" = {}
 "isaaclab_tasks" = {}
-# NOTE: Add additional dependencies here
 
 [[python.module]]
 name = "robros_lab_public"
-
-[isaaclab_settings]
-# TODO: Uncomment and list any apt dependencies here.
-#       If none, leave it commented out.
-# apt_deps = ["example_package"]
-# TODO: Uncomment and provide path to a ros_ws
-#       with rosdeps to be installed. If none,
-#       leave it commented out.
-# ros_ws = "path/from/extension_root/to/ros_ws"

@@ -7,7 +7,7 @@ import math
 from dataclasses import MISSING
 
 import isaaclab.sim as sim_utils
-import isaaclab_tasks.manager_based.locomotion.velocity.mdp as mdp
+import isaaclab_tasks.core.velocity.mdp as mdp
 from isaaclab.assets import ArticulationCfg, AssetBaseCfg
 from isaaclab.envs import ManagerBasedRLEnvCfg
 from isaaclab.managers import CurriculumTermCfg as CurrTerm
@@ -18,19 +18,29 @@ from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
 from isaaclab.scene import InteractiveSceneCfg
-from isaaclab.sensors import ContactSensorCfg, RayCasterCfg, patterns
+from isaaclab.sensors import RayCasterCfg, patterns
+from isaaclab.sim import SimulationCfg
 from isaaclab.terrains import TerrainImporterCfg
-from isaaclab.utils import configclass
 from isaaclab.utils.assets import ISAAC_NUCLEUS_DIR, ISAACLAB_NUCLEUS_DIR
-from isaaclab.utils.noise import AdditiveUniformNoiseCfg as Unoise
-from isaaclab.utils.noise import NoiseModelWithAdditiveBiasCfg
+from isaaclab.utils.configclass import configclass
+from isaaclab.utils.noise import UniformNoiseCfg as Unoise
 
 import robros_lab_public.tasks.locomotion.velocity.mdp as robros_mdp
+from robros_lab_public.tasks.base.utils.backend import RobrosContactSensorCfg, RobrosPhysicsCfg
 
 ##
 # Pre-defined configs
 ##
 from .config.terrains.mixed import MIXED_ROUGH_TERRAINS_CFG
+
+##
+# Physics presets
+##
+
+
+RoughPhysicsCfg = RobrosPhysicsCfg
+VelocityContactSensorCfg = RobrosContactSensorCfg
+
 
 ##
 # Scene definition
@@ -63,11 +73,7 @@ class MySceneCfg(InteractiveSceneCfg):
     robot: ArticulationCfg = MISSING  # type: ignore
 
     # sensors
-    contact_forces = ContactSensorCfg(
-        prim_path="{ENV_REGEX_NS}/Robot/.*",
-        history_length=3,
-        track_air_time=True,
-    )
+    contact_forces = VelocityContactSensorCfg()
     height_scanner = RayCasterCfg(
         prim_path="{ENV_REGEX_NS}/Robot/base_link",
         offset=RayCasterCfg.OffsetCfg(pos=(0.0, 0.0, 20.0)),
@@ -103,11 +109,9 @@ class CommandsCfg:
         heading_command=True,
         heading_control_stiffness=0.5,
         debug_vis=True,
+        high_xy_commands_thres=0.8,
         ranges=mdp.UniformVelocityCommandCfg.Ranges(
-            lin_vel_x=(-0.5, 1.0),
-            lin_vel_y=(-0.5, 0.5),
-            ang_vel_z=(-1.0, 1.0),
-            heading=(-math.pi, math.pi),
+            lin_vel_x=(-0.4, 0.4), lin_vel_y=(-0.4, 0.4), ang_vel_z=(-1.0, 1.0), heading=(-math.pi, math.pi)
         ),
         heading_anchor_name=".*Waist_Pitch.*",
     )
@@ -132,37 +136,22 @@ class ObservationsCfg:
 
         # observation terms (order preserved)
         velocity_commands = ObsTerm(
-            func=mdp.generated_commands,
-            params={"command_name": "base_velocity"},
+            func=mdp.generated_commands, params={"command_name": "base_velocity"}, history_length=1
         )
-        base_ang_vel = ObsTerm(
-            func=mdp.base_ang_vel,
-            noise=Unoise(n_min=-0.1, n_max=0.1),
-        )
-        projected_gravity = ObsTerm(
-            func=mdp.projected_gravity,
-            noise=Unoise(n_min=-0.03, n_max=0.03),
-        )
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel, noise=Unoise(n_min=-0.1, n_max=0.1), history_length=1)
+        projected_gravity = ObsTerm(func=mdp.projected_gravity, noise=Unoise(n_min=-0.03, n_max=0.03), history_length=1)
         joint_pos = ObsTerm(
             func=mdp.joint_pos_rel,
-            noise=NoiseModelWithAdditiveBiasCfg(
-                noise_cfg=Unoise(n_min=-0.03, n_max=0.03), bias_noise_cfg=Unoise(n_min=-0.05, n_max=0.05)
-            ),
+            noise=Unoise(n_min=-0.05, n_max=0.05),
+            history_length=1,
         )
-        joint_vel = ObsTerm(
-            func=mdp.joint_vel,
-            noise=Unoise(n_min=-1.0, n_max=1.0),
-        )
-        last_actions = ObsTerm(
-            func=mdp.last_action,
-            params={"action_name": "joint_pos"},
-        )
+        joint_vel = ObsTerm(func=mdp.joint_vel, noise=Unoise(n_min=-0.5, n_max=0.5), history_length=1)
+        last_actions = ObsTerm(func=mdp.last_action, params={"action_name": "joint_pos"}, history_length=2)
 
         def __post_init__(self):
             self.enable_corruption = True
             self.concatenate_terms = True
             self.flatten_history_dim = True
-            self.history_length = 10
 
     @configclass
     class CriticCfg(ObsGroup):
@@ -177,8 +166,24 @@ class ObservationsCfg:
         last_actions = ObsTerm(func=mdp.last_action, params={"action_name": "joint_pos"})
 
         base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_lin_acc = ObsTerm(func=robros_mdp.base_lin_acc)
+        base_ang_acc = ObsTerm(func=robros_mdp.base_ang_acc)
         joint_torques = ObsTerm(func=robros_mdp.current_joint_torques)
         base_height = ObsTerm(func=robros_mdp.current_base_height)
+        feet_positions = ObsTerm(
+            func=robros_mdp.link_positions,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
+                "anchor_asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+            },
+        )
+        feet_height = ObsTerm(
+            func=robros_mdp.current_link_height,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
+                "sensor_cfg": SceneEntityCfg("height_scanner"),
+            },
+        )
         contact_state = ObsTerm(
             func=robros_mdp.feet_contact_state,
             params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"), "threshold": 1.0},
@@ -193,9 +198,27 @@ class ObservationsCfg:
             self.enable_corruption = False
             self.concatenate_terms = True
 
+    @configclass
+    class AmpCfg(ObsGroup):
+        """State-only observations used by the AMP discriminator."""
+
+        base_ang_vel = ObsTerm(func=mdp.base_ang_vel)
+        projected_gravity = ObsTerm(func=mdp.projected_gravity)
+        joint_pos = ObsTerm(func=mdp.joint_pos)
+        joint_vel = ObsTerm(func=mdp.joint_vel)
+        base_lin_vel = ObsTerm(func=mdp.base_lin_vel)
+        base_height = ObsTerm(func=robros_mdp.current_base_height)
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+            self.flatten_history_dim = True
+            self.history_length = 0
+
     # observation groups
     policy: PolicyCfg = PolicyCfg()
     critic: CriticCfg = CriticCfg()
+    amp: AmpCfg = AmpCfg()
 
 
 @configclass
@@ -204,7 +227,7 @@ class EventCfg:
 
     # startup
     add_base_mass = EventTerm(
-        func=mdp.randomize_rigid_body_mass,  # type: ignore
+        func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*base_link.*"),
@@ -214,7 +237,7 @@ class EventCfg:
     )
 
     add_link_mass = EventTerm(
-        func=mdp.randomize_rigid_body_mass,  # type: ignore
+        func=mdp.randomize_rigid_body_mass,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=[".*"]),
@@ -233,12 +256,12 @@ class EventCfg:
     )
 
     robot_physics_material = EventTerm(
-        func=mdp.randomize_rigid_body_material,  # type: ignore
+        func=mdp.randomize_rigid_body_material,
         mode="startup",
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle.*"),
-            "static_friction_range": (0.2, 2.0),
-            "dynamic_friction_range": (0.2, 2.0),
+            "static_friction_range": (0.5, 2.0),
+            "dynamic_friction_range": (0.5, 2.0),
             "restitution_range": (0.0, 0.4),
             "num_buckets": 64,
             "make_consistent": True,
@@ -246,7 +269,7 @@ class EventCfg:
     )
 
     robot_joint_stiffness_and_damping = EventTerm(
-        func=mdp.randomize_actuator_gains,  # type: ignore
+        func=mdp.randomize_actuator_gains,
         mode="reset",
         params={
             "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
@@ -270,6 +293,16 @@ class EventCfg:
     )
 
     # reset
+    randomize_joint_default_pos = EventTerm(
+        func=robros_mdp.randomize_joint_default_pos,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot", joint_names=".*"),
+            "pos_distribution_params": (-0.03, 0.03),
+            "operation": "add",
+        },
+    )
+
     reset_robot_base = EventTerm(
         func=mdp.reset_root_state_uniform,
         mode="reset",
@@ -295,10 +328,27 @@ class EventCfg:
         },
     )
     push_robot = EventTerm(
-        func=mdp.push_by_setting_velocity,
+        func=robros_mdp.push_by_setting_velocity,
         mode="interval",
         interval_range_s=(0.0, 10.0),
         params={"velocity_range": {"x": (-0.6, 0.6), "y": (-0.6, 0.6)}},
+    )
+    randomize_time_delay_on_reset = EventTerm(
+        func=robros_mdp.actuator_time_delay,
+        mode="reset",
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "delay_steps_range": (0, 2),
+        },
+    )
+    randomize_time_delay = EventTerm(
+        func=robros_mdp.actuator_time_delay,
+        mode="interval",
+        interval_range_s=(10.0, 20.0),
+        params={
+            "asset_cfg": SceneEntityCfg("robot"),
+            "delay_steps_range": (0, 2),
+        },
     )
 
 
@@ -321,13 +371,17 @@ class RewardsCfg:
     action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
     feet_air_time = RewTerm(
         func=mdp.feet_air_time,
-        weight=3.0,
+        weight=0.125,
         params={
             "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*FOOT"),
             "command_name": "base_velocity",
             "threshold": 0.5,
         },
     )
+
+    # -- optional penalties
+    flat_orientation_l2 = RewTerm(func=mdp.flat_orientation_l2, weight=0.0)
+    dof_pos_limits = RewTerm(func=mdp.joint_pos_limits, weight=0.0)
 
 
 @configclass
@@ -347,6 +401,13 @@ class CurriculumCfg:
 
     terrain_levels = CurrTerm(func=mdp.terrain_levels_vel)
     command_levels = CurrTerm(func=robros_mdp.command_levels_vel)
+    # noise_levels = CurrTerm(
+    #     func=robros_mdp.noise_levels_obs,
+    #     params={
+    #         "curriculum_step": 0.02,
+    #         "curriculum_start_interval_steps": 30,
+    #     },
+    # )
 
 
 ##
@@ -369,6 +430,7 @@ class LocomotionVelocityEnvCfg(ManagerBasedRLEnvCfg):
     terminations: TerminationsCfg = TerminationsCfg()
     events: EventCfg = EventCfg()
     curriculum: CurriculumCfg = CurriculumCfg()
+    sim: SimulationCfg = SimulationCfg(physics=RoughPhysicsCfg())
 
     def __post_init__(self):
         """Post initialization."""
@@ -380,7 +442,6 @@ class LocomotionVelocityEnvCfg(ManagerBasedRLEnvCfg):
         self.sim.dt = 0.005
         self.sim.render_interval = self.decimation
         self.sim.physics_material = self.scene.terrain.physics_material
-        self.sim.physx.gpu_max_rigid_patch_count = 10 * 2**15
         # update sensor update periods
         # we tick all the sensors based on the smallest update period (physics update period)
         if self.scene.height_scanner is not None:

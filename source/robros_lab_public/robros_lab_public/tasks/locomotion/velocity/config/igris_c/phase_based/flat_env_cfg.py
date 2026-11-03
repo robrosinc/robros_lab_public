@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-from isaaclab.utils import configclass
+from isaaclab.utils.configclass import configclass
 
 from .rough_env_cfg import IGRISCRoughEnvCfg
 
@@ -22,6 +22,7 @@ class IGRISCFlatEnvCfg(IGRISCRoughEnvCfg):
         # no height scan
         self.scene.height_scanner = None
         self.observations.critic.height_scan = None
+        self.observations.critic.feet_height.params["sensor_cfg"] = None
         # no terrain curriculum
         self.curriculum.terrain_levels = None
 
@@ -42,6 +43,7 @@ class IGRISCFlatEnvCfg_PLAY(IGRISCFlatEnvCfg):
         self.scene.env_spacing = 2.5
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+        self.events.randomize_joint_default_pos = None
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_robot = None

@@ -1,0 +1,869 @@
+#usda 1.0
+(
+    customLayerData = {
+        string creator = "URDF USD Converter v0.1.3"
+    }
+    defaultPrim = "IGRIS_C"
+    doc = """Generated from Composed Stage of root layer /tmp/tmpp9rztbdg/IGRIS_C.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_igris_c_v2_o0_ff10z/usdex_igris_c_v2/IGRIS_C.usdc
+
+
+Generated from Composed Stage of root layer /tmp/urdf_import_igris_c_v2_o0_ff10z/temp_igris_c_v2/igris_c_v2.usd
+"""
+    kilogramsPerUnit = 1
+    metersPerUnit = 1
+    upAxis = "Z"
+)
+
+over "IGRIS_C"
+{
+    over "Geometry"
+    {
+        over "base_link" (
+            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsArticulationRootAPI", "NewtonArticulationRootAPI", "PhysicsMassAPI"]
+        )
+        {
+            bool newton:selfCollisionEnabled = 0
+            point3f physics:centerOfMass = (0.004374119, 0.0012462771, 0.18904702)
+            float3 physics:diagonalInertia = (0.08679978, 0.2928611, 0.3130054)
+            float physics:mass = 14.752
+            quatf physics:principalAxes = (0.71102005, 0.028797524, 0.70218545, 0.023596086)
+
+            over "box" (
+                prepend apiSchemas = ["NewtonCollisionAPI"]
+            )
+            {
+            }
+
+            over "box_1" (
+                prepend apiSchemas = ["NewtonCollisionAPI"]
+            )
+            {
+            }
+
+            over "Link_Waist_Yaw" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                point3f physics:centerOfMass = (0.02597, 0, -0.00927)
+                float3 physics:diagonalInertia = (0.00030670685, 0.00031, 0.00058329315)
+                float physics:mass = 0.208
+                quatf physics:principalAxes = (0.9985061, -5.55942e-17, -0.05464001, 9.00655e-16)
+
+                over "Link_Waist_Roll" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                )
+                {
+                    point3f physics:centerOfMass = (0, 0, -0.00829)
+                    float3 physics:diagonalInertia = (0.00005, 0.00007, 0.00011)
+                    float physics:mass = 0.136
+                    quatf physics:principalAxes = (-0.70710677, 0.70710677, 0, 0)
+
+                    over "Link_Waist_Pitch" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                    )
+                    {
+                        point3f physics:centerOfMass = (-0.0496, 0, -0.05163)
+                        float3 physics:diagonalInertia = (0.039455634, 0.04608435, 0.051560014)
+                        float physics:mass = 8.124
+                        quatf physics:principalAxes = (0.30211288, 0.30287483, 0.63876575, 0.63951)
+
+                        over "Link_Hip_Pitch_Left" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                        )
+                        {
+                            point3f physics:centerOfMass = (0.00973, -0.00102, 0.00002)
+                            float3 physics:diagonalInertia = (0.00258, 0.0026083773, 0.0026716227)
+                            float physics:mass = 1.894
+                            quatf physics:principalAxes = (0.5385588, 0.45820785, 0.5385588, 0.45820785)
+
+                            over "Link_Hip_Roll_Left" (
+                                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                            )
+                            {
+                                point3f physics:centerOfMass = (-0.01497, 0.0057, -0.03564)
+                                float3 physics:diagonalInertia = (0.0010126557, 0.0020601582, 0.0022771861)
+                                float physics:mass = 0.573
+                                quatf physics:principalAxes = (-0.6096242, 0.79008025, 0.056863915, -0.02996655)
+
+                                over "box" (
+                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                )
+                                {
+                                }
+
+                                over "Link_Hip_Yaw_Left" (
+                                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                )
+                                {
+                                    point3f physics:centerOfMass = (-0.01286, -0.00388, -0.10563)
+                                    float3 physics:diagonalInertia = (0.011268497, 0.031659886, 0.033991616)
+                                    float physics:mass = 4.813
+                                    quatf physics:principalAxes = (0.50628716, 0.5181848, 0.49970993, 0.47481346)
+
+                                    over "Link_Knee_Pitch_Left" (
+                                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                    )
+                                    {
+                                        point3f physics:centerOfMass = (0.01044, 0.00096, -0.1232)
+                                        float3 physics:diagonalInertia = (0.0050053108, 0.02704358, 0.02846111)
+                                        float physics:mass = 3.212
+                                        quatf physics:principalAxes = (0.5092662, 0.5351922, 0.4744833, 0.47862598)
+
+                                        over "box" (
+                                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                                        )
+                                        {
+                                        }
+
+                                        over "Link_Ankle_Pitch_Left" (
+                                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                        )
+                                        {
+                                            point3f physics:centerOfMass = (0, 0, 0)
+                                            float3 physics:diagonalInertia = (0.00002, 0.00003, 0.00003)
+                                            float physics:mass = 0.084
+                                            quatf physics:principalAxes = (6.123234e-17, 0.70710677, 0.70710677, 0)
+
+                                            over "Link_Ankle_Roll_Left" (
+                                                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                            )
+                                            {
+                                                point3f physics:centerOfMass = (0.01564, 0, -0.04715)
+                                                float3 physics:diagonalInertia = (0.0007887785, 0.0031506245, 0.0033)
+                                                float physics:mass = 0.852
+                                                quatf physics:principalAxes = (-0.7017198, 0.7017198, 0.08711661, -0.08711661)
+
+                                                over "box_1" (
+                                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                                )
+                                                {
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        over "Link_Hip_Pitch_Right" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                        )
+                        {
+                            point3f physics:centerOfMass = (0.00973, 0.00102, -0.00002)
+                            float3 physics:diagonalInertia = (0.00258, 0.0026083773, 0.0026716227)
+                            float physics:mass = 1.894
+                            quatf physics:principalAxes = (0.45820785, 0.5385588, 0.45820785, 0.5385588)
+
+                            over "Link_Hip_Roll_Right" (
+                                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                            )
+                            {
+                                point3f physics:centerOfMass = (-0.01497, -0.0057, -0.03564)
+                                float3 physics:diagonalInertia = (0.0010126557, 0.0020601582, 0.0022771861)
+                                float physics:mass = 0.573
+                                quatf physics:principalAxes = (0.79008025, -0.6096242, -0.02996655, 0.056863915)
+
+                                over "box" (
+                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                )
+                                {
+                                }
+
+                                over "Link_Hip_Yaw_Right" (
+                                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                )
+                                {
+                                    point3f physics:centerOfMass = (-0.01286, 0.00388, -0.10564)
+                                    float3 physics:diagonalInertia = (0.011288448, 0.03165994, 0.034011614)
+                                    float physics:mass = 4.813
+                                    quatf physics:principalAxes = (0.51822674, 0.50626826, 0.4748308, 0.4996691)
+
+                                    over "Link_Knee_Pitch_Right" (
+                                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                    )
+                                    {
+                                        point3f physics:centerOfMass = (0.01044, -0.00096, -0.1232)
+                                        float3 physics:diagonalInertia = (0.0050053108, 0.02704358, 0.02846111)
+                                        float physics:mass = 3.212
+                                        quatf physics:principalAxes = (0.5351922, 0.5092662, 0.47862598, 0.4744833)
+
+                                        over "box" (
+                                            prepend apiSchemas = ["NewtonCollisionAPI"]
+                                        )
+                                        {
+                                        }
+
+                                        over "Link_Ankle_Pitch_Right" (
+                                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                        )
+                                        {
+                                            point3f physics:centerOfMass = (0, 0, 0)
+                                            float3 physics:diagonalInertia = (0.00002, 0.00003, 0.00003)
+                                            float physics:mass = 0.084
+                                            quatf physics:principalAxes = (6.123234e-17, 0.70710677, 0.70710677, 0)
+
+                                            over "Link_Ankle_Roll_Right" (
+                                                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                                            )
+                                            {
+                                                point3f physics:centerOfMass = (0.01564, 0, -0.04715)
+                                                float3 physics:diagonalInertia = (0.0007887785, 0.0031506245, 0.0033)
+                                                float physics:mass = 0.852
+                                                quatf physics:principalAxes = (-0.7017198, 0.7017198, 0.08711661, -0.08711661)
+
+                                                over "box_1" (
+                                                    prepend apiSchemas = ["NewtonCollisionAPI"]
+                                                )
+                                                {
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            over "Link_Shoulder_Pitch_Left" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                point3f physics:centerOfMass = (0.00039, -0.0033, 0.00004)
+                float3 physics:diagonalInertia = (0.0009695249, 0.00107, 0.0011804751)
+                float physics:mass = 1.105
+                quatf physics:principalAxes = (-0.48799127, 0.48799127, 0.511727, 0.511727)
+
+                over "Link_Shoulder_Roll_Left" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                )
+                {
+                    point3f physics:centerOfMass = (0.02322, 0, -0.031)
+                    float3 physics:diagonalInertia = (0.00025682178, 0.00046, 0.00054317823)
+                    float physics:mass = 0.253
+                    quatf physics:principalAxes = (0.8771982, 0, 0.48012835, 0)
+
+                    over "Link_Shoulder_Yaw_Left" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                    )
+                    {
+                        point3f physics:centerOfMass = (0.00289, 0.00039, -0.14632)
+                        float3 physics:diagonalInertia = (0.0020893463, 0.007120547, 0.0072301067)
+                        float physics:mass = 2.144
+                        quatf physics:principalAxes = (0.47411275, 0.47991177, 0.51673895, 0.52714574)
+
+                        over "Link_Elbow_Pitch_Left" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                        )
+                        {
+                            point3f physics:centerOfMass = (-0.008817652, 0.0010613437, -0.16261242)
+                            float3 physics:diagonalInertia = (0.003802918, 0.03234987, 0.033587366)
+                            float physics:mass = 2.93
+                            quatf physics:principalAxes = (0.49250636, 0.49979728, 0.5051932, 0.50241417)
+
+                            over "cylinder" (
+                                prepend apiSchemas = ["NewtonCollisionAPI"]
+                            )
+                            {
+                            }
+
+                            over "box" (
+                                prepend apiSchemas = ["NewtonCollisionAPI"]
+                            )
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+
+            over "Link_Shoulder_Pitch_Right" (
+                prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+            )
+            {
+                point3f physics:centerOfMass = (0.00039, 0.0033, -0.00004)
+                float3 physics:diagonalInertia = (0.0009695249, 0.00107, 0.0011804751)
+                float physics:mass = 1.105
+                quatf physics:principalAxes = (-0.511727, 0.511727, 0.48799127, 0.48799127)
+
+                over "Link_Shoulder_Roll_Right" (
+                    prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                )
+                {
+                    point3f physics:centerOfMass = (0.02322, 0, -0.031)
+                    float3 physics:diagonalInertia = (0.00025682178, 0.00046, 0.00054317823)
+                    float physics:mass = 0.253
+                    quatf physics:principalAxes = (0.8771982, 0, 0.48012835, 0)
+
+                    over "Link_Shoulder_Yaw_Right" (
+                        prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                    )
+                    {
+                        point3f physics:centerOfMass = (0.00289, -0.00018, -0.14632)
+                        float3 physics:diagonalInertia = (0.0020893393, 0.0071199713, 0.0072306893)
+                        float physics:mass = 2.144
+                        quatf physics:principalAxes = (0.45795017, 0.49535435, 0.5033041, 0.5399913)
+
+                        over "Link_Elbow_Pitch_Right" (
+                            prepend apiSchemas = ["PhysicsRigidBodyAPI", "PhysicsMassAPI"]
+                        )
+                        {
+                            point3f physics:centerOfMass = (-0.008643632, -0.0011145823, -0.16261378)
+                            float3 physics:diagonalInertia = (0.0038009537, 0.032353144, 0.033587)
+                            float physics:mass = 2.93
+                            quatf physics:principalAxes = (0.49925897, 0.49221373, 0.503203, 0.5052256)
+
+                            over "cylinder" (
+                                prepend apiSchemas = ["NewtonCollisionAPI"]
+                            )
+                            {
+                            }
+
+                            over "box" (
+                                prepend apiSchemas = ["NewtonCollisionAPI"]
+                            )
+                            {
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    over "Physics"
+    {
+        def PhysicsRevoluteJoint "Joint_Waist_Yaw" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Z"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -90
+            float physics:upperLimit = 90
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Waist_Roll" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll>
+            point3f physics:localPos0 = (0.05, 0, -0.026)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -18
+            float physics:upperLimit = 18
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Waist_Pitch" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch>
+            point3f physics:localPos0 = (0, 0, -0.04)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -50
+            float physics:upperLimit = 16.5
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Hip_Pitch_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left>
+            point3f physics:localPos0 = (-0.0115, 0.0897, -0.14)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -118
+            float physics:upperLimit = 30
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Hip_Roll_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -19
+            float physics:upperLimit = 135
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Hip_Yaw_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Z"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left>
+            point3f physics:localPos0 = (0.002, 0, -0.076)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -90
+            float physics:upperLimit = 90
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Knee_Pitch_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left/Link_Knee_Pitch_Left>
+            point3f physics:localPos0 = (-0.055, 0, -0.263)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 131
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Ankle_Pitch_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left/Link_Knee_Pitch_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left/Link_Knee_Pitch_Left/Link_Ankle_Pitch_Left>
+            point3f physics:localPos0 = (0.005, 0, -0.34)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -42
+            float physics:upperLimit = 41
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Ankle_Roll_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left/Link_Knee_Pitch_Left/Link_Ankle_Pitch_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Left/Link_Hip_Roll_Left/Link_Hip_Yaw_Left/Link_Knee_Pitch_Left/Link_Ankle_Pitch_Left/Link_Ankle_Roll_Left>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -20
+            float physics:upperLimit = 20
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Hip_Pitch_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right>
+            point3f physics:localPos0 = (-0.0115, -0.0897, -0.14)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -118
+            float physics:upperLimit = 30
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Hip_Roll_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -135
+            float physics:upperLimit = 19
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Hip_Yaw_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Z"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right>
+            point3f physics:localPos0 = (0.002, 0, -0.076)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -90
+            float physics:upperLimit = 90
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Knee_Pitch_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right/Link_Knee_Pitch_Right>
+            point3f physics:localPos0 = (-0.055, 0, -0.263)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = 0
+            float physics:upperLimit = 131
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Ankle_Pitch_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right/Link_Knee_Pitch_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right/Link_Knee_Pitch_Right/Link_Ankle_Pitch_Right>
+            point3f physics:localPos0 = (0.005, 0, -0.34)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -42
+            float physics:upperLimit = 41
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Ankle_Roll_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right/Link_Knee_Pitch_Right/Link_Ankle_Pitch_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Waist_Yaw/Link_Waist_Roll/Link_Waist_Pitch/Link_Hip_Pitch_Right/Link_Hip_Roll_Right/Link_Hip_Yaw_Right/Link_Knee_Pitch_Right/Link_Ankle_Pitch_Right/Link_Ankle_Roll_Right>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -20
+            float physics:upperLimit = 20
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Shoulder_Pitch_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left>
+            point3f physics:localPos0 = (0, 0.171, 0.266)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -180
+            float physics:upperLimit = 60
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Shoulder_Roll_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left/Link_Shoulder_Roll_Left>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -10
+            float physics:upperLimit = 180
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Shoulder_Yaw_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Z"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left/Link_Shoulder_Roll_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left/Link_Shoulder_Roll_Left/Link_Shoulder_Yaw_Left>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -90
+            float physics:upperLimit = 90
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Elbow_Pitch_Left" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left/Link_Shoulder_Roll_Left/Link_Shoulder_Yaw_Left>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Left/Link_Shoulder_Roll_Left/Link_Shoulder_Yaw_Left/Link_Elbow_Pitch_Left>
+            point3f physics:localPos0 = (0.01, 0, -0.197)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -120
+            float physics:upperLimit = 0
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Shoulder_Pitch_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right>
+            point3f physics:localPos0 = (0, -0.171, 0.266)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -180
+            float physics:upperLimit = 60
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Shoulder_Roll_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "X"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right/Link_Shoulder_Roll_Right>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -180
+            float physics:upperLimit = 10
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Shoulder_Yaw_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Z"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right/Link_Shoulder_Roll_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right/Link_Shoulder_Roll_Right/Link_Shoulder_Yaw_Right>
+            point3f physics:localPos0 = (0, 0, 0)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -90
+            float physics:upperLimit = 90
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+
+        def PhysicsRevoluteJoint "Joint_Elbow_Pitch_Right" (
+            prepend apiSchemas = ["PhysicsDriveAPI:angular", "PhysicsJointStateAPI:angular"]
+        )
+        {
+            float drive:angular:physics:damping = 0
+            float drive:angular:physics:maxForce = 1000
+            float drive:angular:physics:stiffness = 0
+            uniform token drive:angular:physics:type = "force"
+            uniform token physics:axis = "Y"
+            custom rel physics:body0
+            prepend rel physics:body0 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right/Link_Shoulder_Roll_Right/Link_Shoulder_Yaw_Right>
+            custom rel physics:body1
+            prepend rel physics:body1 = </IGRIS_C/Geometry/base_link/Link_Shoulder_Pitch_Right/Link_Shoulder_Roll_Right/Link_Shoulder_Yaw_Right/Link_Elbow_Pitch_Right>
+            point3f physics:localPos0 = (0.01, 0, -0.197)
+            point3f physics:localPos1 = (0, 0, 0)
+            quatf physics:localRot0 = (1, 0, 0, 0)
+            quatf physics:localRot1 = (1, 0, 0, 0)
+            float physics:lowerLimit = -120
+            float physics:upperLimit = 0
+            custom float urdf:limit:effort = 1000
+            custom float urdf:limit:velocity = 100
+        }
+    }
+}
