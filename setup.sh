@@ -308,14 +308,36 @@ EOF
     chmod +x "${ISAACSIM_BUILD_DIR}/setup_conda_env.sh"
 }
 
+verify_isaaclab_env_hooks() {
+    local env_prefix
+    local base_prefix
+    env_prefix="$(conda --no-plugins run -n "${ENV_NAME}" python -c 'import sys; print(sys.prefix)')"
+    base_prefix="$(conda --no-plugins info --base)"
+
+    # Isaac Lab hooks in base export Isaac Sim paths into every base activation.
+    if grep -qsF "_isaac_sim/setup_conda_env.sh" "${base_prefix}/etc/conda/activate.d/setenv.sh"; then
+        echo "Isaac Lab activation hooks were found in the base conda environment (${base_prefix})." >&2
+        echo "Remove setenv.sh and torch_gomp.sh from ${base_prefix}/etc/conda/activate.d," >&2
+        echo "and unsetenv.sh and torch_gomp_unset.sh from ${base_prefix}/etc/conda/deactivate.d, then rerun." >&2
+        exit 1
+    fi
+    if [[ ! -f "${env_prefix}/etc/conda/activate.d/setenv.sh" ]]; then
+        echo "Isaac Lab activation hooks are missing in ${env_prefix}/etc/conda/activate.d." >&2
+        exit 1
+    fi
+}
+
 create_isaaclab_env() {
     echo "[INFO] Creating conda environment named '${ENV_NAME}'..."
     (
         cd "${ISAACLAB_DIR}"
-        env -u CONDA_PREFIX -u CONDA_DEFAULT_ENV \
+        # Unset CONDA_SHLVL with CONDA_PREFIX; a stale shell level without a prefix
+        # breaks `conda run` activation and makes isaaclab.sh resolve the base prefix.
+        env -u CONDA_PREFIX -u CONDA_DEFAULT_ENV -u CONDA_SHLVL -u CONDA_PROMPT_MODIFIER \
             -u PYTHONHOME -u PYTHONPATH -u LD_LIBRARY_PATH \
             ./isaaclab.sh --conda "${ENV_NAME}"
     )
+    verify_isaaclab_env_hooks
 
     conda install -n "${ENV_NAME}" -y "python=${PYTHON_VERSION}"
     # existing version verification follows
