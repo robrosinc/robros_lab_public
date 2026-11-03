@@ -4,6 +4,21 @@ Sim-to-real validated Isaac Lab training framework for customers training IGRIS-
 
 This repository contains the public IGRIS-C robot asset, velocity-tracking locomotion tasks, RSL-RL PPO + AMP configuration, and runner scripts needed to train and play policies for IGRIS-C in Isaac Lab with the Newton / MuJoCo Warp (MJWarp) physics backend.
 
+## Demo
+
+<table>
+  <tr>
+    <th align="center">Isaac Lab</th>
+    <th align="center">Sim-to-Sim (MuJoCo)</th>
+    <th align="center">Sim-to-Real (IGRIS-C)</th>
+  </tr>
+  <tr>
+    <td align="center" width="260">TBD</td>
+    <td align="center" width="260">TBD</td>
+    <td align="center" width="260">TBD</td>
+  </tr>
+</table>
+
 ## Setup
 
 Isaac Sim 6.0.1 / Isaac Lab require a Python 3.12 environment. Isaac Sim 6.0.1, a fixed Isaac Lab commit, and RSL-RL 5.4.2 are pinned as submodules under `third_party/`. Use the pinned revisions; do not check out `main` inside a submodule.
