@@ -7,7 +7,7 @@ from isaaclab.assets import Articulation
 from isaaclab.envs import mdp
 from isaaclab.managers import ManagerTermBase, RewardTermCfg, SceneEntityCfg
 from isaaclab.sensors import ContactSensor
-from isaaclab.utils.math import quat_apply_inverse, wrap_to_pi, yaw_quat
+from isaaclab.utils.math import matrix_from_quat, quat_apply_inverse, wrap_to_pi, yaw_quat
 
 if TYPE_CHECKING:
     from isaaclab.envs import ManagerBasedRLEnv
@@ -21,13 +21,13 @@ def track_link_lin_vel_xy_yaw_frame_exp(
     command = env.command_manager.get_command(command_name)
     link_id = asset_cfg.body_ids
     if link_id is None:
-        quat_w = asset.data.root_quat_w
-        lin_vel_w = asset.data.root_lin_vel_w[:, :3]
+        quat_w = asset.data.root_quat_w.torch
+        lin_vel_w = asset.data.root_lin_vel_w.torch[:, :3]
     else:
         if len(link_id) != 1:
             raise ValueError(f"Link id is ambiguous, {link_id}")
-        quat_w = asset.data.body_quat_w[:, link_id, :].squeeze(1)
-        lin_vel_w = asset.data.body_lin_vel_w[:, link_id, :3].squeeze(1)
+        quat_w = asset.data.body_quat_w.torch[:, link_id, :]
+        lin_vel_w = asset.data.body_lin_vel_w.torch[:, link_id, :3].squeeze(1)
 
     vel_yaw = quat_apply_inverse(yaw_quat(quat_w), lin_vel_w)
     lin_vel_error = torch.sum(torch.square(command[:, :2] - vel_yaw[:, :2]), dim=1)
@@ -42,14 +42,158 @@ def track_link_ang_vel_z_world_exp(
     command = env.command_manager.get_command(command_name)
     link_id = asset_cfg.body_ids
     if link_id is None:
-        ang_vel_w = asset.data.root_ang_vel_w[:, :3]
+        ang_vel_w = asset.data.root_ang_vel_w.torch[:, :3]
     else:
         if len(link_id) != 1:
             raise ValueError(f"Link id is ambiguous, {link_id}")
-        ang_vel_w = asset.data.body_ang_vel_w[:, link_id, 2].squeeze(1)
+        ang_vel_w = asset.data.body_ang_vel_w.torch[:, link_id, 2].squeeze(1)
 
     ang_vel_error = torch.square(command[:, 2] - ang_vel_w)
     return torch.exp(-ang_vel_error / std**2)
+
+
+def track_heading_error_exp(env, command_name: str, std: float) -> torch.Tensor:
+    """Reward minimizing the heading-error command component."""
+    command = env.command_manager.get_command(command_name)
+    heading_error = torch.square(command[:, 2])
+    return torch.exp(-heading_error / std**2)
+
+
+def _resolve_body_ids(asset: Articulation, asset_cfg: SceneEntityCfg) -> slice | torch.Tensor:
+    """Return resolved body ids as either a slice or a device tensor."""
+    body_ids = asset_cfg.body_ids
+    if body_ids is None or body_ids == slice(None):
+        return slice(None)
+    if isinstance(body_ids, int):
+        return torch.tensor([body_ids], device=asset.device, dtype=torch.long)
+    return torch.tensor(body_ids, device=asset.device, dtype=torch.long)
+
+
+def _compute_centroidal_quantities(
+    asset: Articulation,
+    body_ids: slice | torch.Tensor,
+    masses: torch.Tensor,
+    inertias: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Compute total CAM and composite inertia about the articulation CoM in world frame."""
+    body_com_pos_w = asset.data.body_com_pos_w.torch[:, body_ids, :]
+    body_com_lin_vel_w = asset.data.body_com_lin_vel_w.torch[:, body_ids, :]
+    body_com_ang_vel_w = asset.data.body_com_ang_vel_w.torch[:, body_ids, :]
+    body_link_quat_w = asset.data.body_link_quat_w.torch[:, body_ids, :]
+
+    total_mass = masses.sum(dim=1, keepdim=True).clamp_min(1.0e-6)
+    system_com_w = torch.sum(masses.unsqueeze(-1) * body_com_pos_w, dim=1) / total_mass
+    rel_com_pos_w = body_com_pos_w - system_com_w.unsqueeze(1)
+
+    rot_mats = matrix_from_quat(body_link_quat_w.reshape(-1, 4)).view(*body_link_quat_w.shape[:-1], 3, 3)
+    inertia_w = rot_mats @ inertias @ rot_mats.transpose(-1, -2)
+
+    rotational_cam_w = (inertia_w @ body_com_ang_vel_w.unsqueeze(-1)).squeeze(-1)
+    orbital_cam_w = torch.linalg.cross(rel_com_pos_w, masses.unsqueeze(-1) * body_com_lin_vel_w, dim=-1)
+    cam_w = torch.sum(rotational_cam_w + orbital_cam_w, dim=1)
+
+    identity = torch.eye(3, device=body_com_pos_w.device, dtype=body_com_pos_w.dtype).view(1, 1, 3, 3)
+    rel_norm_sq = torch.sum(rel_com_pos_w.square(), dim=-1, keepdim=True).unsqueeze(-1)
+    rel_outer = rel_com_pos_w.unsqueeze(-1) @ rel_com_pos_w.unsqueeze(-2)
+    parallel_axis = masses.unsqueeze(-1).unsqueeze(-1) * (rel_norm_sq * identity - rel_outer)
+    composite_inertia_w = torch.sum(inertia_w + parallel_axis, dim=1)
+
+    return cam_w, composite_inertia_w
+
+
+class centroidal_ang_momentum_l2(ManagerTermBase):
+    r"""Reward vertical CAM tracking and penalize horizontal CAM buildup."""
+
+    def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRLEnv):
+        super().__init__(cfg, env)
+        self.asset_cfg: SceneEntityCfg = cfg.params.get("asset_cfg", SceneEntityCfg("robot"))
+        self.asset: Articulation = env.scene[self.asset_cfg.name]
+        self._body_ids = _resolve_body_ids(self.asset, self.asset_cfg)
+        self._masses: torch.Tensor | None = None
+        self._inertias: torch.Tensor | None = None
+        self._prev_cam: torch.Tensor | None = None
+        self._sync_rigid_body_properties()
+
+    def _sync_rigid_body_properties(self, env_ids: torch.Tensor | None = None) -> None:
+        masses = self.asset.data.body_mass.torch
+        inertias = self.asset.data.body_inertia.torch.view(masses.shape[0], masses.shape[1], 3, 3)
+
+        if self._masses is None or self._inertias is None or env_ids is None:
+            self._masses = masses
+            self._inertias = inertias
+            return
+
+        env_ids = env_ids.to(device=self.asset.device, dtype=torch.long)
+        self._masses[env_ids] = masses[env_ids]
+        self._inertias[env_ids] = inertias[env_ids]
+
+    def reset(self, env_ids: torch.Tensor | None = None) -> None:
+        self._sync_rigid_body_properties(env_ids)
+        if self._prev_cam is None:
+            return
+        masses = self._masses[:, self._body_ids]
+        inertias = self._inertias[:, self._body_ids]
+        cam_w, _ = _compute_centroidal_quantities(self.asset, self._body_ids, masses, inertias)
+        cam = quat_apply_inverse(yaw_quat(self.asset.data.root_quat_w.torch), cam_w)
+        if env_ids is None:
+            self._prev_cam = cam
+            return
+        env_ids = env_ids.to(device=self.asset.device, dtype=torch.long)
+        self._prev_cam[env_ids] = cam[env_ids]
+
+    def __call__(
+        self,
+        env: ManagerBasedRLEnv,
+        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot"),
+        command_name: str = "base_velocity",
+        cam_tracking_scale: float = 0.5,
+        tracking_sigma: float = 0.25,
+        z_tracking_weight: float = 3.0,
+        dcam_xy_weight: float = 5.0e-2,
+        reference_scale: float = 1.0,
+        command_threshold: float = 0.1,
+        only_when_moving: bool = False,
+        use_yaw_frame: bool = True,
+    ) -> torch.Tensor:
+        del asset_cfg
+
+        if self._masses is None or self._inertias is None:
+            self._sync_rigid_body_properties()
+
+        masses = self._masses[:, self._body_ids]
+        inertias = self._inertias[:, self._body_ids]
+        cam_w, composite_inertia_w = _compute_centroidal_quantities(self.asset, self._body_ids, masses, inertias)
+
+        cam = quat_apply_inverse(yaw_quat(self.asset.data.root_quat_w.torch), cam_w) if use_yaw_frame else cam_w
+
+        command = env.command_manager.get_command(command_name)
+        kz_ref = reference_scale * composite_inertia_w[:, 2, 2] * command[:, 2]
+        kz_error = (cam[:, 2] - kz_ref) / (1.0 + kz_ref.abs())
+        z_tracking_reward = torch.exp(
+            -torch.square(kz_error / max(cam_tracking_scale, 1.0e-6)) / max(tracking_sigma, 1.0e-6)
+        )
+
+        if self._prev_cam is None:
+            dcam_xy_penalty = torch.zeros_like(z_tracking_reward)
+        else:
+            dcam = (cam - self._prev_cam) / max(float(env.step_dt), 1.0e-6)
+            dcam_xy_buildup = torch.sum(cam[:, :2] * dcam[:, :2], dim=-1)
+            dcam_xy_penalty = -torch.clamp_min(dcam_xy_buildup, 0.0)
+
+        self._prev_cam = cam.clone()
+
+        z_reward = z_tracking_weight * z_tracking_reward
+        xy_reward = dcam_xy_weight * dcam_xy_penalty
+
+        if only_when_moving:
+            moving_command = (torch.norm(command[:, :3], dim=-1) > command_threshold).float()
+            z_reward = z_reward * moving_command
+            xy_reward = xy_reward * moving_command
+
+        cam_reward = z_reward + xy_reward
+        startup_env_mask = env.episode_length_buf < 2
+        cam_reward[startup_env_mask] = z_reward[startup_env_mask]
+        return cam_reward
 
 
 def get_phase(env: ManagerBasedRLEnv) -> torch.Tensor:
@@ -90,8 +234,8 @@ def contact_swing_track(
     contact_prob = norm_dist.cdf(phase / sigma) * (1.0 - norm_dist.cdf((phase - 0.5) / sigma)) + norm_dist.cdf(
         (phase - 1.0) / sigma
     ) * (1.0 - norm_dist.cdf((phase - 1.5) / sigma))
-    forces = sensor.data.net_forces_w[:, sensor_cfg.body_ids, :]
-    vel = asset.data.body_lin_vel_w[:, sensor_cfg.body_ids, :]
+    forces = sensor.data.net_forces_w.torch[:, sensor_cfg.body_ids, :]
+    vel = asset.data.body_lin_vel_w.torch[:, sensor_cfg.body_ids, :]
     term_contact = 1.0 - torch.exp(-forces.square().sum(dim=-1) / 50.0)
     term_swing = 1.0 - torch.exp(-vel.square().sum(dim=-1) / 5.0)
     moving_command = torch.norm(env.command_manager.get_command(command_name)[:, :3], dim=-1) > 0.1
@@ -118,7 +262,7 @@ def arm_swing(
 ) -> torch.Tensor:
     """Reward coordinated arm swing using the shared gait phase."""
     asset = env.scene[asset_cfg.name]
-    target_angle = asset.data.default_joint_pos[:, asset_cfg.joint_ids].clone().expand(env.num_envs, -1)
+    target_angle = asset.data.default_joint_pos.torch[:, asset_cfg.joint_ids].clone().expand(env.num_envs, -1)
 
     phase = get_phase(env)
     if len(swing_asset_cfg.joint_ids) != 2:
@@ -127,7 +271,7 @@ def arm_swing(
     target_angle[:, swing_asset_cfg.joint_ids] += (
         0.1 * torch.cos(2 * torch.pi * phase) * torch.sign(env.command_manager.get_command(command_name)[:, 0])[:, None]
     )
-    error = asset.data.joint_pos[:, arms_asset_cfg.joint_ids] - target_angle[:, arms_asset_cfg.joint_ids]
+    error = asset.data.joint_pos.torch[:, arms_asset_cfg.joint_ids] - target_angle[:, arms_asset_cfg.joint_ids]
     return torch.exp(-torch.sum(error.square(), dim=-1) / 0.1)
 
 
@@ -140,14 +284,14 @@ def feet_distance(
 ) -> torch.Tensor:
     """Reward nominal lateral foot spacing in the anchor yaw frame."""
     asset = env.scene[asset_cfg.name]
-    feet_pos = asset.data.body_link_pos_w[:, asset_cfg.body_ids]
+    feet_pos = asset.data.body_link_pos_w.torch[:, asset_cfg.body_ids]
     distance_vector_in_global = feet_pos[:, 0] - feet_pos[:, 1]
     if anchor_asset_cfg.body_ids is None:
-        anchor_yaw_quat = yaw_quat(asset.data.root_quat_w)
+        anchor_yaw_quat = yaw_quat(asset.data.root_quat_w.torch)
     else:
         if len(anchor_asset_cfg.body_ids) != 1:
             raise ValueError(f"Anchor link is ambiguous: {anchor_asset_cfg.body_ids}")
-        anchor_yaw_quat = yaw_quat(asset.data.body_quat_w[:, anchor_asset_cfg.body_ids, :]).squeeze(1)
+        anchor_yaw_quat = yaw_quat(asset.data.body_quat_w.torch[:, anchor_asset_cfg.body_ids, :]).squeeze(1)
 
     distance_vector_in_anchor = quat_apply_inverse(anchor_yaw_quat, distance_vector_in_global)
     too_close = torch.clamp(nominal_width - distance_vector_in_anchor[:, 1].abs(), min=0.0)
@@ -162,8 +306,8 @@ def feet_aligned(
 ) -> torch.Tensor:
     """Reward feet yaw alignment when commanded yaw velocity is small."""
     asset = env.scene[asset_cfg.name]
-    feet_quat = yaw_quat(asset.data.body_quat_w[:, asset_cfg.body_ids])
-    w, x, y, z = feet_quat[..., 0], feet_quat[..., 1], feet_quat[..., 2], feet_quat[..., 3]
+    feet_quat = yaw_quat(asset.data.body_quat_w.torch[:, asset_cfg.body_ids])
+    x, y, z, w = feet_quat.unbind(dim=-1)
     siny_cosp = 2.0 * (w * z + x * y)
     cosy_cosp = 1.0 - 2.0 * (y * y + z * z)
     yaw = torch.atan2(siny_cosp, cosy_cosp)
@@ -183,10 +327,10 @@ def penalize_double_stance(
     sensor: ContactSensor = env.scene[sensor_cfg.name]
     command = env.command_manager.get_command(command_name)
 
-    contact = torch.norm(sensor.data.net_forces_w[:, sensor_cfg.body_ids, :], dim=-1) > threshold
+    contact = torch.norm(sensor.data.net_forces_w.torch[:, sensor_cfg.body_ids, :], dim=-1) > threshold
     double_stance = contact.all(dim=-1)
     moving_command = torch.norm(command[:, :3], dim=-1) > 0.1
-    not_moving = torch.norm(asset.data.root_lin_vel_w[:, :3], dim=-1) < 0.2
+    not_moving = torch.norm(asset.data.root_lin_vel_w.torch[:, :3], dim=-1) < 0.2
     return (double_stance & moving_command & not_moving).float()
 
 
@@ -213,7 +357,7 @@ def stand_still_joint_vel_l2(
     asset: Articulation = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
     command_still = torch.norm(command[:, :3], dim=1) < command_threshold
-    return torch.sum(torch.square(asset.data.joint_vel[:, asset_cfg.joint_ids]), dim=1) * command_still
+    return torch.sum(torch.square(asset.data.joint_vel.torch[:, asset_cfg.joint_ids]), dim=1) * command_still
 
 
 def stand_still_base_velocity_l2(
@@ -226,74 +370,14 @@ def stand_still_base_velocity_l2(
     asset: Articulation = env.scene[asset_cfg.name]
     command = env.command_manager.get_command(command_name)
     command_still = torch.norm(command[:, :3], dim=1) < command_threshold
-    lin_vel_l2 = torch.sum(torch.square(asset.data.root_lin_vel_b[:, :3]), dim=1)
-    ang_vel_l2 = torch.sum(torch.square(asset.data.root_ang_vel_b[:, :3]), dim=1)
+    lin_vel_l2 = torch.sum(torch.square(asset.data.root_lin_vel_b.torch[:, :3]), dim=1)
+    ang_vel_l2 = torch.sum(torch.square(asset.data.root_ang_vel_b.torch[:, :3]), dim=1)
     return (lin_vel_l2 + ang_vel_l2) * command_still
-
-
-class slow_touchdown_penalty(ManagerTermBase):
-    """
-    Penalize fast touchdown (contact appearing with high foot speed).
-    """
-
-    def __init__(self, cfg: RewardTermCfg, env: ManagerBasedRLEnv):
-        """Initialize the term.
-
-        Args:
-            cfg: The configuration of the reward term.
-            env: The RL environment instance.
-        """
-        super().__init__(cfg, env)
-        self.last_vel = None
-        self.last_contact_force = None
-
-    def __call__(
-        self,
-        env: ManagerBasedRLEnv,
-        sensor_cfg: SceneEntityCfg = SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
-        asset_cfg: SceneEntityCfg = SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
-    ) -> torch.Tensor:
-        """Compute the action smoothness penalty.
-
-        Args:
-            env: The RL environment instance.
-            sensor_cfg: The feet contact sensors.
-            asset_cfg: The robot feet asset.
-
-        Returns:
-            The penalty value based on the touchdown speed.
-        """
-        sensor: ContactSensor = env.scene[sensor_cfg.name]
-        asset: Articulation = env.scene[asset_cfg.name]
-        sensor_body_ids = sensor_cfg.body_ids if sensor_cfg.body_ids is not None else slice(None)
-        asset_body_ids = asset_cfg.body_ids if asset_cfg.body_ids is not None else sensor_body_ids
-
-        forces = sensor.data.net_forces_w[:, sensor_body_ids, :]
-        curr_vel = asset.data.body_lin_vel_w[:, asset_body_ids, :]
-
-        if self.last_contact_force is None or self.last_vel is None:
-            self.last_contact_force = forces.clone()
-            self.last_vel = curr_vel.clone()
-            return torch.zeros(curr_vel.shape[0], device=curr_vel.device)
-
-        force_sq = torch.sum(forces * forces, dim=-1)
-        last_force_sq = torch.sum(self.last_contact_force * self.last_contact_force, dim=-1)
-        touchdown = (force_sq > 1.0) & (last_force_sq < 1.0)
-
-        curr_speed_sq = torch.sum(curr_vel * curr_vel, dim=-1)
-        last_speed_sq = torch.sum(self.last_vel * self.last_vel, dim=-1)
-        penalty = torch.sum(touchdown * torch.sqrt(torch.maximum(curr_speed_sq, last_speed_sq)), dim=-1)
-
-        self.last_contact_force = forces.clone()
-        self.last_vel = curr_vel.clone()
-
-        startup_env_mask = env.episode_length_buf < 1
-        penalty[startup_env_mask] = 0
-        return penalty
 
 
 __all__ = [
     "arm_swing",
+    "centroidal_ang_momentum_l2",
     "contact_swing_track",
     "feet_aligned",
     "feet_distance",
@@ -303,7 +387,7 @@ __all__ = [
     "stand_still_base_velocity_l2",
     "stand_still_joint_deviation_l1",
     "stand_still_joint_vel_l2",
+    "track_heading_error_exp",
     "track_link_ang_vel_z_world_exp",
     "track_link_lin_vel_xy_yaw_frame_exp",
-    "slow_touchdown_penalty",
 ]

@@ -1,1 +1,3 @@
-"""Shared MDP terms for Robros locomotion tasks."""
+"""
+The base environment contains mdp elements shared among custom environments.
+"""

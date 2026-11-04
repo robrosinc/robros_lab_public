@@ -3,8 +3,10 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-"""Symmetry functions for the IGRIS-C velocity tasks."""
+"""Symmetry functions for the velocity tasks.
 
-from .igris_c import compute_symmetric_states
+These functions are used to augment the observations and actions of the environment.
+They are specific to the velocity task and the choice of the robot.
+"""
 
-__all__ = ["compute_symmetric_states"]
+from .igris_c import *

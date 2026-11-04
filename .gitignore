@@ -6,17 +6,12 @@
 .DS_Store
 **/*.egg-info/
 **/__pycache__/
-**/.pytest_cache/
-**/.pixi/
 **/*.pyc
 **/*.pb
 
 # IDE
 **/.idea/
 **/.vscode/
-# Don't ignore the top-level .vscode directory as it is
-# used to configure VS Code settings
-!.vscode
 
 # Outputs
 **/runs/*
@@ -27,7 +22,6 @@
 **/videos/*
 **/wandb/*
 **/.neptune/*
-docker/artifacts/
 *.tmp
 
 # Isaac-Sim packman
@@ -38,8 +32,9 @@ _build
 
 config.yaml
 .asset_hash
-!source/robros_lab_public/robros_lab_public/assets/robots/robros/**/config.yaml
-!source/robros_lab_public/robros_lab_public/assets/robots/robros/**/.asset_hash
 
 # Plots
 *.png
+
+# Data
+*.ini

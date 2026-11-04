@@ -2,66 +2,9 @@
 requires = ["setuptools", "toml"]
 build-backend = "setuptools.build_meta"
 
-[tool.isort]
-
-atomic = true
-profile = "black"
-line_length = 120
-py_version = 310
-skip_glob = ["docs/*", "logs/*"]
-group_by_package = true
-
-sections = [
-    "FUTURE",
-    "STDLIB",
-    "THIRDPARTY",
-    "ISAACLABPARTY",
-    "FIRSTPARTY",
-    "LOCALFOLDER",
-]
-extra_standard_library = [
-    "numpy",
-    "h5py",
-    "open3d",
-    "torch",
-    "tensordict",
-    "bpy",
-    "matplotlib",
-    "gymnasium",
-    "gym",
-    "scipy",
-    "hid",
-    "yaml",
-    "prettytable",
-    "toml",
-    "trimesh",
-    "tqdm",
-    "psutil",
-]
-known_thirdparty = [
-    "isaacsim.core.api",
-    "omni.replicator.core",
-    "pxr",
-    "omni.kit.*",
-    "warp",
-    "carb",
-    "Semantics",
-]
-known_isaaclabparty = [
-    "isaaclab",
-    "isaaclab_tasks",
-    "isaaclab_assets",
-    "isaaclab_mimic",
-    "isaaclab_rl"
-]
-
-# Modify the following to include the package names of your first-party code
-known_firstparty = "robros_lab_public"
-known_local_folder = "config"
-
 [tool.ruff]
 line-length = 120
-target-version = "py310"
+target-version = "py312"
 src = ["source/robros_lab_public", "scripts"]
 force-exclude = true
 exclude = [
@@ -102,63 +45,12 @@ exclude = [
 ]
 
 typeCheckingMode = "off"
-pythonVersion = "3.11"
+pythonVersion = "3.12"
 pythonPlatform = "Linux"
 enableTypeIgnoreComments = true
-extraPaths = [
-    "source/robros_lab_public",
-    "scripts/rsl_rl",
-    "third_party/rsl_rl",
-    "third_party/IsaacSim/_build/linux-x86_64/release/kit/python/lib/python3.11",
-    "third_party/IsaacSim/_build/linux-x86_64/release/kit/python/lib/python3.11/site-packages",
-    "third_party/IsaacSim/_build/linux-x86_64/release/kit/python/lib/python3.11/lib-dynload",
-    "third_party/IsaacSim/_build/linux-x86_64/release/kit/kernel/py",
-    "third_party/IsaacSim/_build/linux-x86_64/release/kit/extscore/omni.client.lib",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.simulation_app",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.api",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.cloner",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.experimental.prims",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.prims",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.simulation_manager",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.utils",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.core.version",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.asset.exporter.urdf/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/isaacsim.robot_motion.lula/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/omni.isaac.core_archive/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/omni.isaac.ml_archive/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/omni.pip.cloud/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/exts/omni.pip.compute/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extsDeprecated/omni.isaac.kit",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.kit.commands-1.4.10+69cbf6ad.lx64.r.cp311",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.kit.pip_archive-0.0.0+69cbf6ad.lx64.cp311/pip_prebundle",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.kit.viewport.utility-1.1.2+69cbf6ad",
-    "/home/robros/.local/share/ov/data/exts/v2/omni.kit.actions.core-f92065ee89fab450",
-    "/home/robros/.local/share/ov/data/exts/v2/omni.kit.actions.window-f5564f9d8fa87e5b",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.physics.tensors-107.3.26+107.3.3.lx64.r.cp311.u353",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.physx-107.3.26+107.3.3.lx64.r.cp311.u353",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.physx.fabric-107.3.26+107.3.3.lx64.r.cp311.u353",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.physx.pvd-107.3.26+107.3.3.lx64.r.cp311.u353",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.replicator.core-1.12.27+107.3.3.lx64.r.cp311",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.timeline-1.0.14+69cbf6ad.lx64.r.cp311",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.ui-2.27.1+69cbf6ad.lx64.r.cp311",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.usd-1.13.10+69cbf6ad.lx64.r.cp311",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.usd.libs-1.0.1+69cbf6ad.lx64.r.cp311",
-    "/home/robros/.local/share/ov/data/exts/v2/omni.usd.libs-4fde11c8f289f1f4",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.usd.metrics.assembler-107.3.1+107.3.0.lx64.r.cp311.u353",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.usd.schema.physx-107.3.26+107.3.3.lx64.r.cp311.u353",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.usd.schema.semantics-0.0.0+69cbf6ad.lx64.r.cp311",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/omni.warp.core-1.8.2+lx64",
-    "third_party/IsaacSim/_build/linux-x86_64/release/extscache/usdrt.scenegraph-7.6.1+69cbf6ad.lx64.r.cp311",
-    "third_party/IsaacLab/source/isaaclab",
-    "third_party/IsaacLab/source/isaaclab_assets",
-    "third_party/IsaacLab/source/isaaclab_contrib",
-    "third_party/IsaacLab/source/isaaclab_mimic",
-    "third_party/IsaacLab/source/isaaclab_rl",
-    "third_party/IsaacLab/source/isaaclab_tasks",
-]
 
-# This is required as the CI pre-commit does not download the module (i.e. numpy, torch, prettytable)
-# Therefore, we have to ignore missing imports
+# Isaac Sim / Isaac Lab modules are often not resolvable by static analysis,
+# so missing imports are ignored.
 reportMissingImports = "none"
 # This is required to ignore for type checks of modules with stubs missing.
 reportMissingModuleSource = "none" # -> most common: prettytable in mdp managers

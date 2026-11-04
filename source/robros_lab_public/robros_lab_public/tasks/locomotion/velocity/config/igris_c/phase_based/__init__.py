@@ -13,7 +13,7 @@ from .. import agents
 
 gym.register(
     id="Isaac-Velocity-Phase-Rough-IGRISC",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="robros_lab_public.tasks.locomotion.velocity.robros_velocity_env:RobrosVelocityRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:IGRISCRoughEnvCfg",
@@ -23,7 +23,7 @@ gym.register(
 
 gym.register(
     id="Isaac-Velocity-Phase-Rough-IGRISC_Play",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="robros_lab_public.tasks.locomotion.velocity.robros_velocity_env:RobrosVelocityRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.rough_env_cfg:IGRISCRoughEnvCfg_PLAY",
@@ -33,7 +33,7 @@ gym.register(
 
 gym.register(
     id="Isaac-Velocity-Phase-Flat-IGRISC",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="robros_lab_public.tasks.locomotion.velocity.robros_velocity_env:RobrosVelocityRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.flat_env_cfg:IGRISCFlatEnvCfg",
@@ -43,7 +43,7 @@ gym.register(
 
 gym.register(
     id="Isaac-Velocity-Phase-Flat-IGRISC_Play",
-    entry_point="isaaclab.envs:ManagerBasedRLEnv",
+    entry_point="robros_lab_public.tasks.locomotion.velocity.robros_velocity_env:RobrosVelocityRLEnv",
     disable_env_checker=True,
     kwargs={
         "env_cfg_entry_point": f"{__name__}.flat_env_cfg:IGRISCFlatEnvCfg_PLAY",

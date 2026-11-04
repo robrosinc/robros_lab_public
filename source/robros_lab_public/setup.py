@@ -1,5 +1,7 @@
-# Copyright (c) 2024-2025 Ziqi Fan
-# SPDX-License-Identifier: Apache-2.0
+# Copyright (c) 2022-2025, The Isaac Lab Project Developers.
+# All rights reserved.
+#
+# SPDX-License-Identifier: BSD-3-Clause
 
 """Installation script for the 'robros_lab_public' python package."""
 
@@ -15,12 +17,13 @@ EXTENSION_TOML_DATA = toml.load(os.path.join(EXTENSION_PATH, "config", "extensio
 
 # Minimum dependencies required prior to installation
 INSTALL_REQUIRES = [
-    # NOTE: Add dependencies
-    "psutil",
+    "easydict",
+    "loguru",
     "lxml",
-    "transformations",
-    "colorama",
-    "prettytable",
+    "numpy",
+    "rich",
+    "scipy",
+    "toml",
 ]
 
 # Installation operation
@@ -36,12 +39,11 @@ setup(
     install_requires=INSTALL_REQUIRES,
     license="Apache License 2.0",
     include_package_data=True,
-    python_requires=">=3.10",
+    python_requires=">=3.12",
     classifiers=[
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.10",
-        "Isaac Sim :: 2023.1.1",
-        "Isaac Sim :: 4.0.0",
+        "Programming Language :: Python :: 3.12",
+        "Isaac Sim :: 6.0.1",
     ],
     zip_safe=False,
 )

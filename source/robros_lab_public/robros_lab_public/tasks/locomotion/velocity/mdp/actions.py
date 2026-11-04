@@ -2,9 +2,8 @@ from __future__ import annotations
 
 import torch
 from isaaclab.envs import ManagerBasedEnv
-from isaaclab.envs.mdp.actions import ActionTermCfg
-from isaaclab.managers.action_manager import ActionTerm
-from isaaclab.utils import configclass
+from isaaclab.managers.action_manager import ActionTerm, ActionTermCfg
+from isaaclab.utils.configclass import configclass
 
 
 class GaitFreqAction(ActionTerm):

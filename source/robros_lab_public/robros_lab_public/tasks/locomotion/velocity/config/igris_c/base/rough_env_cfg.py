@@ -3,21 +3,32 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-import isaaclab_tasks.manager_based.locomotion.velocity.mdp as mdp
+
+import isaaclab_tasks.core.velocity.mdp as mdp
+from isaaclab.managers import ObservationGroupCfg as ObsGroup
+from isaaclab.managers import ObservationTermCfg as ObsTerm
 from isaaclab.managers import RewardTermCfg as RewTerm
 from isaaclab.managers import SceneEntityCfg
 from isaaclab.managers import TerminationTermCfg as DoneTerm
-from isaaclab.sensors import ContactSensorCfg
-from isaaclab.utils import configclass
+from isaaclab.utils.configclass import configclass
+from isaaclab.utils.noise import UniformNoiseCfg as Unoise
 
 import robros_lab_public.tasks.locomotion.velocity.mdp as robros_mdp
 
 ##
 # Pre-defined configs
 ##
-from robros_lab_public.assets import IGRIS_C_LOCOMOTION_CFG
+from robros_lab_public.assets import (
+    IGRIS_C_LOCOMOTION_CFG,
+    MYACTUATOR_X8_60_STIFFNESS,
+    MYACTUATOR_X8_90_STIFFNESS,
+    MYACTUATOR_X8_120_STIFFNESS,
+    MYACTUATOR_X12_150_STIFFNESS,
+)
+from robros_lab_public.tasks.base.utils.backend import contact_sensor_preset, spawn_igris_c_with_ankle_roll_margin
 from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import LocomotionVelocityEnvCfg
 from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import MySceneCfg as BaseSceneCfg
+from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import ObservationsCfg as BaseObservationsCfg
 from robros_lab_public.tasks.locomotion.velocity.velocity_env_cfg import TerminationsCfg as BaseTerminationsCfg
 
 SELF_COLLISION_SENSOR_SPECS = (
@@ -35,21 +46,33 @@ SELF_COLLISION_SENSOR_SPECS = (
 )
 SELF_COLLISION_SENSOR_NAMES = tuple(sensor_name for sensor_name, _ in SELF_COLLISION_SENSOR_SPECS)
 SELF_COLLISION_BODY_NAMES = tuple(body_name for _, body_name in SELF_COLLISION_SENSOR_SPECS)
+AMP_KEY_BODY_POS_NAMES = (
+    "Link_Ankle_Roll_Left",
+    "Link_Ankle_Roll_Right",
+    "Link_Elbow_Pitch_Left",
+    "Link_Elbow_Pitch_Right",
+)
+AMP_KEY_BODY_ROT_NAMES = (
+    "Link_Elbow_Pitch_Left",
+    "Link_Elbow_Pitch_Right",
+)
+IGRISC_FOOT_BODY_ORDER = ("Link_Ankle_Roll_Left", "Link_Ankle_Roll_Right")
 
 
-def _self_collision_sensor_cfg(body_name: str) -> ContactSensorCfg:
-    return ContactSensorCfg(
-        prim_path=f"{{ENV_REGEX_NS}}/Robot/{body_name}",
+def _self_collision_sensor_cfg(body_name: str):
+    sensor_kwargs = {
+        "prim_path": f"{{ENV_REGEX_NS}}/Robot/.*{body_name}",
         # Use exact per-body filter paths. A wildcard like "{ENV_REGEX_NS}/Robot/.*" resolves to the
         # entire articulation and breaks PhysX filtered-contact cardinality checks.
-        filter_prim_paths_expr=[
-            f"{{ENV_REGEX_NS}}/Robot/{other_body_name}"
+        "filter_prim_paths_expr": [
+            f"{{ENV_REGEX_NS}}/Robot/.*{other_body_name}"
             for other_body_name in SELF_COLLISION_BODY_NAMES
             if other_body_name != body_name
         ],
-        history_length=3,
-        debug_vis=False,
-    )
+        "history_length": 3,
+        "debug_vis": False,
+    }
+    return contact_sensor_preset(**sensor_kwargs)
 
 
 @configclass
@@ -72,8 +95,14 @@ class IGRISCScene(BaseSceneCfg):
 class IGRISCRewards:
     """Reward terms for the MDP."""
 
-    # -- task
-    is_alive = RewTerm(func=mdp.is_alive, weight=3.0)
+    self_collisions = RewTerm(
+        func=robros_mdp.self_collision_cost,
+        weight=-10.0,
+        params={
+            "sensor_names": SELF_COLLISION_SENSOR_NAMES,
+            "threshold": 10.0,
+        },
+    )
     track_lin_vel_xy_exp = RewTerm(
         func=robros_mdp.track_link_lin_vel_xy_yaw_frame_exp,
         weight=2.0,
@@ -91,6 +120,79 @@ class IGRISCRewards:
             "std": 0.5,
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_Waist_Pitch.*"),
         },
+    )
+    base_height_exp = RewTerm(
+        func=robros_mdp.base_height_exp,
+        weight=0.4,
+        params={"target_height": 0.94, "std": 0.07, "sensor_cfg": SceneEntityCfg("height_scanner")},
+    )
+    smoothness = RewTerm(
+        func=robros_mdp.action_smoothness_penalty,
+        weight=-0.0025,
+    )
+    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.01)
+    dof_acc_l2 = RewTerm(
+        func=mdp.joint_acc_l2,
+        weight=-5.0e-7,
+    )
+    dof_vel_l2 = RewTerm(
+        func=mdp.joint_vel_l2,
+        weight=-1.0e-3,
+    )
+    dof_torques_l2 = RewTerm(
+        func=mdp.joint_torques_l2,
+        weight=-5.0e-6,
+    )
+    dof_torques_rate_l2 = RewTerm(
+        func=robros_mdp.torque_rate_penalty,
+        weight=-1.5e-7,
+    )
+    dof_power_l1 = RewTerm(func=robros_mdp.joint_power_l1, weight=-2.5e-5)
+    base_lin_acc_l2 = RewTerm(
+        func=robros_mdp.body_lin_acc_l2,
+        weight=-2.0e-3,
+        params={
+            "asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+        },
+    )
+    flat_orientation_exp = RewTerm(
+        func=robros_mdp.flat_link_orientation_exp,
+        params={"asset_cfg": SceneEntityCfg("robot", body_names="base_link"), "std": 0.15},
+        weight=0.5,
+    )
+    stumble = RewTerm(
+        func=robros_mdp.stumble,
+        weight=-1.5,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
+        },
+    )
+    feet_slide = RewTerm(
+        func=mdp.feet_slide,
+        weight=-0.05,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
+        },
+    )
+    slow_touchdown = RewTerm(
+        func=robros_mdp.slow_touchdown_penalty,
+        weight=-1.0,
+        params={
+            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
+            "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
+        },
+    )
+    feet_contact_forces = RewTerm(
+        func=robros_mdp.feet_contact_forces,
+        weight=-1.0e-3,
+        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"), "threshold": 600.0},
+    )
+    is_alive = RewTerm(func=mdp.is_alive, weight=3.0)
+    dof_pos_limits = RewTerm(func=robros_mdp.joint_pos_limits_binary, weight=-1.0)
+    action_l2 = RewTerm(
+        func=mdp.action_l2,
+        weight=-2.0e-4,
     )
     standstill_l2 = RewTerm(
         func=robros_mdp.stand_still_joint_deviation_l1,
@@ -114,37 +216,11 @@ class IGRISCRewards:
             "command_name": "base_velocity",
             "asset_cfg": SceneEntityCfg("robot"),
         },
-        weight=-1.0,
-    )
-    # -- style
-    joint_deviation_hip = RewTerm(
-        func=robros_mdp.joint_deviation_l2,
         weight=-0.5,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_Hip_Yaw.*", ".*_Hip_Roll.*"])},
-    )
-    joint_deviation_arms = RewTerm(
-        func=robros_mdp.joint_deviation_l2,
-        weight=-0.5,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=[".*_Shoulder_.*", ".*_Elbow_.*"])},
-    )
-    joint_deviation_waist = RewTerm(
-        func=robros_mdp.joint_deviation_l2,
-        weight=-0.5,
-        params={"asset_cfg": SceneEntityCfg("robot", joint_names=".*Waist.*")},
-    )
-    base_height_exp = RewTerm(
-        func=robros_mdp.base_height_exp,
-        weight=0.4,
-        params={"target_height": 0.94, "std": 0.07, "sensor_cfg": SceneEntityCfg("height_scanner")},
-    )
-    flat_orientation_exp = RewTerm(
-        func=robros_mdp.flat_link_orientation_exp,
-        params={"asset_cfg": SceneEntityCfg("robot", body_names="base_link"), "std": 0.2},
-        weight=0.5,
     )
     feet_distance = RewTerm(
         func=robros_mdp.feet_distance,
-        weight=0.5,
+        weight=0.2,
         params={
             "asset_cfg": SceneEntityCfg("robot", body_names=".*_Ankle_Roll_.*"),
             "anchor_asset_cfg": SceneEntityCfg("robot", body_names=".*_Waist_Pitch.*"),
@@ -161,15 +237,6 @@ class IGRISCRewards:
             "std": 0.25,
         },
     )
-    feet_air_time = RewTerm(
-        func=robros_mdp.feet_air_time,
-        weight=5.0,
-        params={
-            "command_name": "base_velocity",
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
-            "threshold": 0.5,
-        },
-    )
     penalize_double_stance = RewTerm(
         func=robros_mdp.penalize_double_stance,
         weight=-2.0,
@@ -179,67 +246,20 @@ class IGRISCRewards:
             "threshold": 2.0,  # [N]
         },
     )
-    stumble = RewTerm(
-        func=robros_mdp.stumble,
-        weight=-1.5,
+    centroidal_ang_momentum = RewTerm(
+        func=robros_mdp.centroidal_ang_momentum_l2,
+        weight=0.5,
         params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
-        },
-    )
-    feet_slide = RewTerm(
-        func=mdp.feet_slide,
-        weight=-0.05,
-        params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
-        },
-    )
-    # -- regularization
-    action_rate_l2 = RewTerm(func=mdp.action_rate_l2, weight=-0.05)
-    action_l2 = RewTerm(
-        func=mdp.action_l2,
-        weight=-1.0e-3,
-    )
-    dof_pos_limits = RewTerm(func=robros_mdp.joint_pos_limits_binary, weight=-10.0)
-    dof_acc_l2 = RewTerm(
-        func=mdp.joint_acc_l2,
-        weight=-5.0e-7,
-    )
-    dof_vel_l2 = RewTerm(
-        func=mdp.joint_vel_l2,
-        weight=-1.0e-3,
-    )
-    dof_torques_l2 = RewTerm(
-        func=mdp.joint_torques_l2,
-        weight=-2.0e-5,
-    )
-    slow_touchdown = RewTerm(
-        func=robros_mdp.slow_touchdown_penalty,
-        weight=-1.0,
-        params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
-        },
-    )
-    feet_contact_forces = RewTerm(
-        func=robros_mdp.feet_contact_forces,
-        weight=-1.0e-3,
-        params={"sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"), "threshold": 600.0},
-    )
-    slow_touchdown = RewTerm(
-        func=robros_mdp.slow_touchdown_penalty,
-        weight=-1.0,
-        params={
-            "sensor_cfg": SceneEntityCfg("contact_forces", body_names=".*Ankle_Roll.*"),
-            "asset_cfg": SceneEntityCfg("robot", body_names=".*Ankle_Roll.*"),
-        },
-    )
-    self_collisions = RewTerm(
-        func=robros_mdp.self_collision_cost,
-        weight=-10.0,
-        params={
-            "sensor_names": SELF_COLLISION_SENSOR_NAMES,
-            "threshold": 10.0,
+            "asset_cfg": SceneEntityCfg("robot"),
+            "command_name": "base_velocity",
+            "cam_tracking_scale": 0.5,
+            "tracking_sigma": 0.25,
+            "z_tracking_weight": 3.0,
+            "dcam_xy_weight": 1.0e-2,
+            "reference_scale": 1.0,
+            "command_threshold": 0.1,
+            "only_when_moving": False,
+            "use_yaw_frame": True,
         },
     )
 
@@ -260,7 +280,7 @@ class IGRISCTerminations(BaseTerminationsCfg):
     thigh_contact_acceleration = DoneTerm(
         func=robros_mdp.ThighContactAccelerationTermination,
         params={
-            "acceleration_threshold": 150.0,
+            "acceleration_threshold": 100.0,
             "thigh_name_pattern": ".*Hip_Yaw_{side}.*",
             "foot_name_pattern": ".*Ankle_Roll_{side}.*",
             "asset_cfg": SceneEntityCfg("robot"),
@@ -270,24 +290,168 @@ class IGRISCTerminations(BaseTerminationsCfg):
 
 
 @configclass
+class IGRISCActions:
+    joint_pos = mdp.JointPositionActionCfg(
+        asset_name="robot",
+        # Select every public articulation joint.  ArticulationCfg owns their
+        # canonical IGRIS-C/PhysX order, so this action term must not duplicate it.
+        joint_names=[".*"],
+        use_default_offset=True,
+        scale={
+            ".*Knee.*": 0.25 * 150 / MYACTUATOR_X12_150_STIFFNESS,
+            ".*Hip_Pitch.*": 0.25 * 150 / MYACTUATOR_X12_150_STIFFNESS,
+            ".*Hip_Roll.*": 0.25 * 120 / MYACTUATOR_X8_120_STIFFNESS,
+            ".*Ankle.*": 0.25 * 90 / MYACTUATOR_X8_90_STIFFNESS,
+            ".*Waist.*": 0.25 * 60 / MYACTUATOR_X8_60_STIFFNESS,
+            ".*Shoulder.*": 0.25 * 60 / MYACTUATOR_X8_60_STIFFNESS,
+            ".*Elbow.*": 0.25 * 60 / MYACTUATOR_X8_60_STIFFNESS,
+            ".*Hip_Yaw.*": 0.25 * 60 / MYACTUATOR_X8_60_STIFFNESS,
+        },
+    )
+
+
+@configclass
+class IGRISCObservations(BaseObservationsCfg):
+    """IGRIS-C observation overrides for policy-side filtered measurements."""
+
+    @configclass
+    class PolicyCfg(BaseObservationsCfg.PolicyCfg):
+        joint_pos = ObsTerm(
+            func=robros_mdp.joint_pos_feedback_rel,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+            noise=Unoise(n_min=-0.02, n_max=0.02),
+            history_length=1,
+        )
+        # joint_vel = ObsTerm(func=robros_mdp.joint_vel_feedback, noise=Unoise(n_min=-0.5, n_max=0.5), history_length=1)
+
+        joint_vel = ObsTerm(
+            func=robros_mdp.finite_difference_obs,
+            params={
+                "obs_func": robros_mdp.joint_pos_feedback_rel,
+                "obs_func_params": {"asset_cfg": SceneEntityCfg("robot")},
+                "enable_lpf": False,
+                "cutoff_frequency_hz": 6.0,
+            },
+            noise=Unoise(n_min=-1.0, n_max=1.0),
+            history_length=1,
+        )
+
+        def __post_init__(self):
+            super().__post_init__()
+            self.base_ang_vel.history_length = 10
+            self.projected_gravity.history_length = 10
+            self.joint_pos.history_length = 10
+            self.joint_vel.history_length = 10
+            self.last_actions.history_length = 10
+
+    @configclass
+    class CriticCfg(BaseObservationsCfg.CriticCfg):
+        joint_pos = ObsTerm(
+            func=mdp.joint_pos_rel,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+        )
+        joint_vel = ObsTerm(
+            func=mdp.joint_vel,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+        )
+        joint_torques = ObsTerm(
+            func=robros_mdp.current_joint_torques,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+        )
+        feet_positions = ObsTerm(
+            func=robros_mdp.link_positions,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=list(IGRISC_FOOT_BODY_ORDER), preserve_order=True),
+                "anchor_asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+            },
+        )
+        feet_height = ObsTerm(
+            func=robros_mdp.current_link_height,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=list(IGRISC_FOOT_BODY_ORDER), preserve_order=True),
+                "sensor_cfg": SceneEntityCfg("height_scanner"),
+            },
+        )
+        contact_state = ObsTerm(
+            func=robros_mdp.feet_contact_state,
+            params={
+                "sensor_cfg": SceneEntityCfg(
+                    "contact_forces", body_names=list(IGRISC_FOOT_BODY_ORDER), preserve_order=True
+                ),
+                "threshold": 1.0,
+            },
+        )
+
+    @configclass
+    class AmpCfg(BaseObservationsCfg.AmpCfg):
+        joint_pos = ObsTerm(
+            func=mdp.joint_pos,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+        )
+        joint_vel = ObsTerm(
+            func=mdp.joint_vel,
+            params={"asset_cfg": SceneEntityCfg("robot")},
+        )
+        key_body_positions = ObsTerm(
+            func=robros_mdp.link_positions,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=list(AMP_KEY_BODY_POS_NAMES), preserve_order=True),
+                "anchor_asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+            },
+        )
+        key_body_orientations = ObsTerm(
+            func=robros_mdp.link_orientations,
+            params={
+                "asset_cfg": SceneEntityCfg("robot", body_names=list(AMP_KEY_BODY_ROT_NAMES), preserve_order=True),
+                "anchor_asset_cfg": SceneEntityCfg("robot", body_names="base_link"),
+            },
+        )
+
+    @configclass
+    class AmpLabelCfg(ObsGroup):
+        velocity_label = ObsTerm(
+            func=mdp.generated_commands, params={"command_name": "base_velocity"}, history_length=1
+        )
+
+        def __post_init__(self):
+            self.enable_corruption = False
+            self.concatenate_terms = True
+            self.flatten_history_dim = True
+
+    policy: PolicyCfg = PolicyCfg()
+    critic: CriticCfg = CriticCfg()
+    amp: AmpCfg = AmpCfg()
+    amp_label: AmpLabelCfg = AmpLabelCfg()
+
+
+@configclass
 class IGRISCRoughEnvCfg(LocomotionVelocityEnvCfg):
     scene: IGRISCScene = IGRISCScene(num_envs=4096, env_spacing=2.5, replicate_physics=True)
+    observations: IGRISCObservations = IGRISCObservations()
     rewards: IGRISCRewards = IGRISCRewards()
     terminations: IGRISCTerminations = IGRISCTerminations()
+    actions: IGRISCActions = IGRISCActions()
 
     def __post_init__(self):
         # post init of parent
         super().__post_init__()
         # Scene
+
         self.scene.robot = IGRIS_C_LOCOMOTION_CFG.replace(prim_path="{ENV_REGEX_NS}/Robot")
+        if self.scene.robot.spawn is not None:
+            self.scene.robot.spawn.func = spawn_igris_c_with_ankle_roll_margin
         if self.scene.height_scanner:
-            self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/base_link"
+            self.scene.height_scanner.prim_path = "{ENV_REGEX_NS}/Robot/Geometry/base_link"
 
         # Commands
-        self.commands.base_velocity.ranges.lin_vel_x = (-0.5, 1.0)
+        self.commands.base_velocity.ranges.lin_vel_x = (-0.6, 0.6)
         self.commands.base_velocity.ranges.lin_vel_y = (-0.5, 0.5)
         self.commands.base_velocity.ranges.ang_vel_z = (-1.0, 1.0)
         self.commands.base_velocity.heading_anchor_name = ".*Waist_Pitch.*"
+        self.commands.base_velocity.rel_vx_envs = 0.1
+        self.commands.base_velocity.rel_vy_envs = 0.1
+        self.commands.base_velocity.rel_wz_envs = 0.1
+        self.commands.base_velocity.max_curriculum = 1.0
 
 
 @configclass
@@ -315,6 +479,7 @@ class IGRISCRoughEnvCfg_PLAY(IGRISCRoughEnvCfg):
         self.commands.base_velocity.heading_command = False
         # disable randomization for play
         self.observations.policy.enable_corruption = False
+        self.events.randomize_joint_default_pos = None
         # remove random pushing
         self.events.base_external_force_torque = None
         self.events.push_robot = None
