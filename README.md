@@ -6,18 +6,9 @@ This repository contains the public IGRIS-C robot asset, velocity-tracking locom
 
 ## Demo
 
-<table>
-  <tr>
-    <th align="center">Isaac Lab</th>
-    <th align="center">Sim-to-Sim (MuJoCo)</th>
-    <th align="center">Sim-to-Real (IGRIS-C)</th>
-  </tr>
-  <tr>
-    <td align="center" width="260">TBD</td>
-    <td align="center" width="260">TBD</td>
-    <td align="center" width="260">TBD</td>
-  </tr>
-</table>
+<p align="center">
+  <img src="docs/media/demo.gif" alt="Sim-to-Sim / Sim-to-Real demo" width="100%">
+</p>
 
 ## Setup
 
